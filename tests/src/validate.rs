@@ -763,6 +763,71 @@ fn validate_pdf_ua1_empty_form_field_alt_name() {
         .contains(&ValidationError::MissingFieldAltName(Some(field_loc))));
 }
 
+// PDF/UA-2 does not allow content directly below the `Document` element, and krilla does
+// not yet write what it needs for forms, internal links and outline entries, so this
+// example has a title, a paragraph and a link to a URI.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_example(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 50.0),
+        font.clone(),
+        20.0,
+        "A nice title",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "This is some text",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+    surface.finish();
+
+    let annotation = page.add_tagged_annotation(Annotation::new_link(
+        LinkAnnotation::new(
+            Rect::from_xywh(0.0, 80.0, 100.0, 30.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ),
+        Some("A link to youtube".to_string()),
+    ));
+    page.finish();
+
+    let mut title = TagGroup::new(Tag::Title);
+    title.push(id1);
+
+    let mut link = TagGroup::new(Tag::Link);
+    link.push(id2);
+    link.push(annotation);
+
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(link);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(title);
+    tag_tree.push(paragraph);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    document.set_outline(Outline::new());
+}
+
 #[snapshot(document, settings_15)]
 fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut page = document.start_page();

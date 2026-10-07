@@ -1111,13 +1111,24 @@ pub enum Accessibility {
     ///
     /// [`TagKind`]: crate::interchange::tagging::TagKind
     UA1,
+    /// The validator for the PDF/UA-2 standard, which requires PDF 2.0.
+    ///
+    /// **This validator is incomplete.** krilla writes the PDF/UA-2 identification and the
+    /// `DisplayDocTitle` flag and applies the same checks as for [`Accessibility::UA1`],
+    /// but it does not yet write structure destinations for links and outline entries, or
+    /// `Ref` entries for table of contents items and footnotes. A document that uses
+    /// those will not conform, even though it is exported without an error. See
+    /// `PDF_UA2.md` for the details.
+    ///
+    /// The requirements listed for [`Accessibility::UA1`] apply here as well.
+    UA2,
 }
 
 impl Accessibility {
     fn prohibits(self, error: &ValidationError) -> bool {
         match (self, error) {
             (
-                Self::UA1,
+                Self::UA1 | Self::UA2,
                 ValidationError::ContainsNotDefGlyph(_, _, _)
                 | ValidationError::NoCodepointMapping(_, _, _)
                 | ValidationError::InvalidCodepointMapping(_, _, _, _)
@@ -1139,7 +1150,7 @@ impl Accessibility {
                 ),
             ) => true,
             (
-                Self::UA1,
+                Self::UA1 | Self::UA2,
                 ValidationError::TooLongString
                 | ValidationError::TooLongName
                 | ValidationError::TooLongArray
@@ -1168,13 +1179,13 @@ impl Accessibility {
 
     fn requires_codepoint_mappings(self) -> bool {
         match self {
-            Self::UA1 => true,
+            Self::UA1 | Self::UA2 => true,
         }
     }
 
     fn requires_display_doc_title(self) -> bool {
         match self {
-            Self::UA1 => true,
+            Self::UA1 | Self::UA2 => true,
         }
     }
 
@@ -1184,7 +1195,7 @@ impl Accessibility {
 
     fn requires_xmp_metadata(self) -> bool {
         match self {
-            Self::UA1 => true,
+            Self::UA1 | Self::UA2 => true,
         }
     }
 
@@ -1192,6 +1203,11 @@ impl Accessibility {
         match self {
             Self::UA1 => {
                 xmp.pdfua_part(1);
+            }
+            Self::UA2 => {
+                // ISO 14289-2:2024, clause 5: the part and the year of publication.
+                xmp.pdfua_part(2);
+                xmp.pdfua_rev(2024);
             }
         }
     }
@@ -1201,6 +1217,8 @@ impl Accessibility {
         extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
     ) {
         // Needs to be updated if [`Self::write_xmp`] gains more properties.
+        // `pdfuaid:rev` is only written for PDF/UA-2, which needs PDF 2.0, and no PDF/A
+        // part that uses extension schemas allows PDF 2.0.
         extension_schemas.pdfua_id().properties().describe_part();
     }
 
@@ -1208,6 +1226,7 @@ impl Accessibility {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::UA1 => "PDF/UA-1",
+            Self::UA2 => "PDF/UA-2",
         }
     }
 
@@ -1216,6 +1235,8 @@ impl Accessibility {
         match self {
             // PDF/UA-1 requires Tagged PDF and XMP `/Metadata` streams, which both require PDF 1.4.
             Self::UA1 => Some(PdfVersion::Pdf14),
+            // PDF/UA-2 is specified against PDF 2.0.
+            Self::UA2 => Some(PdfVersion::Pdf20),
         }
     }
 
@@ -1224,6 +1245,7 @@ impl Accessibility {
         match self {
             // PDF/UA-1 is specified against PDF 1.7.
             Self::UA1 => PdfVersion::Pdf17,
+            Self::UA2 => PdfVersion::Pdf20,
         }
     }
 }
