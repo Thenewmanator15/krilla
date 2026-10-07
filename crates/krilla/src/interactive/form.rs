@@ -274,7 +274,7 @@ impl From<FormField<kind::ListBox>> for FieldKind {
 #[derive(Debug, Default)]
 pub struct FormField<T> {
     name: String,
-    alt_name: Option<String>,
+    pub(crate) alt_name: Option<String>,
     mapping_name: Option<String>,
     flags: FieldFlags,
     pub(crate) identifier: Option<Ref>,

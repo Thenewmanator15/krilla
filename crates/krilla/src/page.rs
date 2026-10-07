@@ -11,7 +11,7 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use crate::annotation::AnnotationType;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::ValidationError;
+use crate::configure::{PdfVersion, ValidationError};
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::form::FormField;
@@ -264,6 +264,14 @@ impl<'a> Page<'a> {
             panic!("Called add_widget_annotation with a non-widget annotation");
         };
         widget.set_parent(parent_ref);
+
+        // PDF/UA-2 asks for a `Contents` entry on a widget that has no `Lbl` in its `Form`
+        // structure element, so describe the widget with the field's alternative name.
+        if annotation.alt.is_none()
+            && self.sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20
+        {
+            annotation.alt = field.alt_name.clone().filter(|alt| !alt.is_empty());
+        }
 
         let annot_index = self.annotations.len();
         let ai = AnnotationIdentifier::new(self.page_index, annot_index);

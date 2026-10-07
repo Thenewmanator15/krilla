@@ -17,6 +17,12 @@ See `README.md` for the meaning of each color.
 - krilla writes the root `Document` structure element in the PDF 2.0 namespace (clause 8.2.5.2). 🟢
 - krilla writes its standard structure types in the PDF 1.7 or PDF 2.0 namespace and role
   maps its own types (`Datetime`, `Terms`) to PDF 2.0 types (clause 8.2.4). 🟢
+- krilla writes `FENote` for the `Note` tag, since PDF/UA-2 does not allow `Note` (clause
+  8.2.5.14). 🟢
+- krilla writes a `Contents` entry on every widget annotation of a field with an alternative
+  name, and requires that name (clause 8.10.2.3). The name has to be set before the widget
+  is added to the page. If the enclosing `Form` element has an `Alt`, it has to be the same
+  text (clause 8.9.4.2), which is up to the user. 🟢
 - krilla applies every check it applies for PDF/UA-1 (see `PDF_UA1.md`): codepoint mappings,
   alternative text, heading titles, tagging, font licenses, embedded file descriptions,
   embedded PDFs and the document outline. 🟢
@@ -27,10 +33,9 @@ See `README.md` for the meaning of each color.
   writes XYZ and named destinations for link annotations and outline entries. 🔴
 - Each `TOCI` has to identify its target with a `Ref` entry (clause 8.2.5.8). krilla does
   not write `Ref`. 🔴
-- Footnotes and endnotes have to be `FENote` elements, linked to their references in both
-  directions with `Ref`. krilla writes the PDF 1.7 `Note` type. 🔴
-- A widget annotation without a label needs a `Contents` entry (clause 8.10.2.3). krilla
-  writes the field's alternative name, but no `Contents`. 🔴
+- Footnotes and endnotes have to be linked to their references in both directions with `Ref`
+  (clause 8.2.5.14). krilla writes `FENote`, but not `Ref`, and not the `NoteType`
+  attribute, which then has its default value `None`. 🔴
 - A list whose items have `Lbl` elements needs a `ListNumbering` other than `None` (clause
   8.2.5.25). This is up to the user and not checked. krilla does not have the PDF 2.0
   values `Ordered`, `Unordered` and `Description`. 🟣
@@ -43,7 +48,9 @@ See `README.md` for the meaning of each color.
 # Checked with
 
 veraPDF 1.30.3, profile "PDF/UA-2 + Tagged PDF": the `validate_pdf_ua2_example` test document
-(a title, a paragraph and a link to a URI) conforms. So do a plain paragraph and a list with
-`Decimal` numbering. A link or outline entry with an XYZ destination fails 8.8, a `TOCI`
-fails 8.2.5.8, a `Note` fails 8.2.5.14 and a list with labels and `ListNumbering::None` fails
-8.2.5.25.
+(a title, a paragraph and a link to a URI) conforms, and so does
+`validate_pdf_ua2_form_and_footnote` (a paragraph, a footnote and a push button). So do a
+plain paragraph and a list with `Decimal` numbering. A link or outline entry with an XYZ
+destination fails 8.8, a `TOCI` fails 8.2.5.8 and a list with labels and
+`ListNumbering::None` fails 8.2.5.25. veraPDF does not check that a footnote's reference
+has a `Ref`; it only checks that the `Ref` entries that exist match up.

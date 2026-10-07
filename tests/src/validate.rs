@@ -828,6 +828,80 @@ fn validate_pdf_ua2_example(document: &mut Document) {
     document.set_outline(Outline::new());
 }
 
+// A push button and a footnote: PDF/UA-2 wants `Contents` on the widget and `FENote`
+// rather than `Note`.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_form_and_footnote(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font.clone(),
+        20.0,
+        "This is some text",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 150.0),
+        font,
+        10.0,
+        "This is a footnote",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    let button_appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+    surface.finish();
+
+    let mut button =
+        FormField::push_button("button".to_string()).with_alt_name("A button".to_string());
+    let button_annotation = {
+        let annotation = Annotation::from(button.new_widget(
+            Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+            button_appearance,
+        ));
+        page.add_widget_annotation(&mut button, annotation)
+    };
+    page.finish();
+
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(id1);
+
+    let mut note_paragraph = TagGroup::new(Tag::P);
+    note_paragraph.push(id2);
+    let mut note = TagGroup::new(Tag::Note);
+    note.push(note_paragraph);
+
+    let mut form = TagGroup::new(Tag::Form);
+    form.push(button_annotation);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(paragraph);
+    tag_tree.push(note);
+    tag_tree.push(form);
+    document.set_tag_tree(tag_tree);
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    document.set_outline(Outline::new());
+}
+
 #[snapshot(document, settings_15)]
 fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
