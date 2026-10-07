@@ -318,6 +318,43 @@ impl TagKind {
         self
     }
 
+    /// The ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn refs(&self) -> Option<&[TagId]> {
+        self.as_any().refs()
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn set_refs(&mut self, refs: Option<impl IntoIterator<Item = TagId>>) {
+        self.as_any_mut().set_refs(refs);
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn with_refs(mut self, refs: Option<impl IntoIterator<Item = TagId>>) -> Self {
+        self.set_refs(refs);
+        self
+    }
+
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.as_any().title()
@@ -834,6 +871,43 @@ impl AnyTag {
         self
     }
 
+    /// The ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn refs(&self) -> Option<&[TagId]> {
+        self.get_struct(StructAttr::REFS).map(StructAttr::unwrap_refs)
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn set_refs(&mut self, refs: Option<impl IntoIterator<Item = TagId>>) {
+        self.set_or_remove_struct(StructAttr::REFS, refs.map(|ids| ids.into_iter().collect()).map(StructAttr::Refs));
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn with_refs(mut self, refs: Option<impl IntoIterator<Item = TagId>>) -> Self {
+        self.set_refs(refs);
+        self
+    }
+
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.get_struct(StructAttr::TITLE).map(StructAttr::unwrap_title)
@@ -1278,6 +1352,43 @@ impl<T> Tag<T> {
     /// replacement text of the word.
     pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
         self.set_actual_text(actual_text);
+        self
+    }
+
+    /// The ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn refs(&self) -> Option<&[TagId]> {
+        self.inner.get_struct(StructAttr::REFS).map(StructAttr::unwrap_refs)
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn set_refs(&mut self, refs: Option<impl IntoIterator<Item = TagId>>) {
+        self.inner.set_or_remove_struct(StructAttr::REFS, refs.map(|ids| ids.into_iter().collect()).map(StructAttr::Refs));
+    }
+
+    /// Set the ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    pub fn with_refs(mut self, refs: Option<impl IntoIterator<Item = TagId>>) -> Self {
+        self.set_refs(refs);
         self
     }
 
@@ -4185,6 +4296,15 @@ pub(crate) enum StructAttr {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     ActualText(String),
+    /// The ids of other tags that this tag refers to. For example, an item in a table
+    /// of contents refers to the heading it lists, a footnote reference to its
+    /// footnote, and the footnote back to its references.
+    ///
+    /// Only written for PDF 2.0, as the `Ref` entry. The referenced tags need an id.
+    ///
+    /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
+    /// `String` and tags without it stay the size they were.
+    Refs(Vec<TagId>),
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     Title(String),
     /// The heading level
@@ -4197,8 +4317,9 @@ impl StructAttr {
     pub(crate) const ALT_TEXT: usize = 2;
     pub(crate) const EXPANDED: usize = 3;
     pub(crate) const ACTUAL_TEXT: usize = 4;
-    pub(crate) const TITLE: usize = 5;
-    pub(crate) const HEADING_LEVEL: usize = 6;
+    pub(crate) const REFS: usize = 5;
+    pub(crate) const TITLE: usize = 6;
+    pub(crate) const HEADING_LEVEL: usize = 7;
 
         #[inline(always)]
         fn unwrap_id(&self) -> &TagId {
@@ -4241,6 +4362,14 @@ impl StructAttr {
         }
 
         #[inline(always)]
+        fn unwrap_refs(&self) -> &[TagId] {
+            match self {
+                Self::Refs(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
         fn unwrap_title(&self) -> &str {
             match self {
                 Self::Title(val) => val.as_ref(),
@@ -4265,6 +4394,7 @@ impl Ordinal for StructAttr {
             Self::AltText(_) => Self::ALT_TEXT,
             Self::Expanded(_) => Self::EXPANDED,
             Self::ActualText(_) => Self::ACTUAL_TEXT,
+            Self::Refs(_) => Self::REFS,
             Self::Title(_) => Self::TITLE,
             Self::HeadingLevel(_) => Self::HEADING_LEVEL,
         }
@@ -4278,7 +4408,7 @@ pub(crate) enum ListAttr {
 }
 
 impl ListAttr {
-    pub(crate) const NUMBERING: usize = 7;
+    pub(crate) const NUMBERING: usize = 8;
 
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
@@ -4317,11 +4447,11 @@ pub(crate) enum TableAttr {
 }
 
 impl TableAttr {
-    pub(crate) const SUMMARY: usize = 8;
-    pub(crate) const HEADER_SCOPE: usize = 9;
-    pub(crate) const CELL_HEADERS: usize = 10;
-    pub(crate) const ROW_SPAN: usize = 11;
-    pub(crate) const COL_SPAN: usize = 12;
+    pub(crate) const SUMMARY: usize = 9;
+    pub(crate) const HEADER_SCOPE: usize = 10;
+    pub(crate) const CELL_HEADERS: usize = 11;
+    pub(crate) const ROW_SPAN: usize = 12;
+    pub(crate) const COL_SPAN: usize = 13;
 
         #[inline(always)]
         fn unwrap_summary(&self) -> &str {
@@ -4443,36 +4573,36 @@ pub(crate) enum LayoutAttr {
 }
 
 impl LayoutAttr {
-    pub(crate) const PLACEMENT: usize = 13;
-    pub(crate) const WRITING_MODE: usize = 14;
-    pub(crate) const B_BOX: usize = 15;
-    pub(crate) const WIDTH: usize = 16;
-    pub(crate) const HEIGHT: usize = 17;
-    pub(crate) const BACKGROUND_COLOR: usize = 18;
-    pub(crate) const BORDER_COLOR: usize = 19;
-    pub(crate) const BORDER_STYLE: usize = 20;
-    pub(crate) const BORDER_THICKNESS: usize = 21;
-    pub(crate) const PADDING: usize = 22;
-    pub(crate) const COLOR: usize = 23;
-    pub(crate) const SPACE_BEFORE: usize = 24;
-    pub(crate) const SPACE_AFTER: usize = 25;
-    pub(crate) const START_INDENT: usize = 26;
-    pub(crate) const END_INDENT: usize = 27;
-    pub(crate) const TEXT_INDENT: usize = 28;
-    pub(crate) const TEXT_ALIGN: usize = 29;
-    pub(crate) const BLOCK_ALIGN: usize = 30;
-    pub(crate) const INLINE_ALIGN: usize = 31;
-    pub(crate) const TABLE_BORDER_STYLE: usize = 32;
-    pub(crate) const TABLE_PADDING: usize = 33;
-    pub(crate) const BASELINE_SHIFT: usize = 34;
-    pub(crate) const LINE_HEIGHT: usize = 35;
-    pub(crate) const TEXT_DECORATION_COLOR: usize = 36;
-    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 37;
-    pub(crate) const TEXT_DECORATION_TYPE: usize = 38;
-    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 39;
-    pub(crate) const COLUMN_COUNT: usize = 40;
-    pub(crate) const COLUMN_GAP: usize = 41;
-    pub(crate) const COLUMN_WIDTHS: usize = 42;
+    pub(crate) const PLACEMENT: usize = 14;
+    pub(crate) const WRITING_MODE: usize = 15;
+    pub(crate) const B_BOX: usize = 16;
+    pub(crate) const WIDTH: usize = 17;
+    pub(crate) const HEIGHT: usize = 18;
+    pub(crate) const BACKGROUND_COLOR: usize = 19;
+    pub(crate) const BORDER_COLOR: usize = 20;
+    pub(crate) const BORDER_STYLE: usize = 21;
+    pub(crate) const BORDER_THICKNESS: usize = 22;
+    pub(crate) const PADDING: usize = 23;
+    pub(crate) const COLOR: usize = 24;
+    pub(crate) const SPACE_BEFORE: usize = 25;
+    pub(crate) const SPACE_AFTER: usize = 26;
+    pub(crate) const START_INDENT: usize = 27;
+    pub(crate) const END_INDENT: usize = 28;
+    pub(crate) const TEXT_INDENT: usize = 29;
+    pub(crate) const TEXT_ALIGN: usize = 30;
+    pub(crate) const BLOCK_ALIGN: usize = 31;
+    pub(crate) const INLINE_ALIGN: usize = 32;
+    pub(crate) const TABLE_BORDER_STYLE: usize = 33;
+    pub(crate) const TABLE_PADDING: usize = 34;
+    pub(crate) const BASELINE_SHIFT: usize = 35;
+    pub(crate) const LINE_HEIGHT: usize = 36;
+    pub(crate) const TEXT_DECORATION_COLOR: usize = 37;
+    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 38;
+    pub(crate) const TEXT_DECORATION_TYPE: usize = 39;
+    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 40;
+    pub(crate) const COLUMN_COUNT: usize = 41;
+    pub(crate) const COLUMN_GAP: usize = 42;
+    pub(crate) const COLUMN_WIDTHS: usize = 43;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {
