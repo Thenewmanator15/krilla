@@ -557,7 +557,8 @@ impl TagKind {
             Self::TFoot(_) => write_kind_compat(sc, struct_elem, StructRole2::TFoot),
             Self::Span(_) => write_kind_compat(sc, struct_elem, StructRole2::Span),
             Self::InlineQuote(_) => write_kind_1_7(struct_elem, StructRole::Quote),
-            Self::Note(_) => write_kind_1_7(struct_elem, StructRole::Note),
+            // PDF 2.0 replaces `Note` with `FENote`, and PDF/UA-2 forbids `Note`.
+            Self::Note(_) => write_kind_compat(sc, struct_elem, StructRole2::FENote),
             Self::Reference(_) => write_kind_1_7(struct_elem, StructRole::Reference),
             Self::BibEntry(_) => write_kind_1_7(struct_elem, StructRole::BibEntry),
             Self::Code(_) => write_kind_1_7(struct_elem, StructRole::Code),
