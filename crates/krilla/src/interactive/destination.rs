@@ -12,9 +12,11 @@ use pdf_writer::{Obj, Ref, Str};
 use tiny_skia_path::Transform;
 
 use crate::chunk_container::ChunkContainer;
+use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Point;
 use crate::serialize::{PageInfo, SerializeContext};
+use crate::surface::Location;
 
 /// The type of destination.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -26,7 +28,14 @@ pub enum Destination {
 }
 
 impl Destination {
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, buffer: Obj) -> KrillaResult<()> {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        buffer: Obj,
+        location: Option<Location>,
+    ) -> KrillaResult<()> {
+        sc.register_validation_error(ValidationError::NonStructureDestination(location));
+
         match self {
             Destination::Xyz(xyz) => {
                 let ref_ = sc.register_xyz_destination(xyz.clone());

@@ -3,8 +3,8 @@ PDF/UA-2 (ISO 14289-2:2024) requires PDF 2.0.
 
 **This mode is incomplete.** Unlike the other files in this folder, this is not yet a
 clause-by-clause account of the standard. It lists what krilla does for PDF/UA-2 today and
-what is known to be missing. A document that needs one of the missing features is exported
-without an error, but does not conform.
+what is known to be missing. krilla cannot write structure destinations yet, so a document
+with a link, an action or an outline entry that leads to a destination is rejected.
 
 See `README.md` for the meaning of each color.
 
@@ -23,6 +23,14 @@ See `README.md` for the meaning of each color.
   name, and requires that name (clause 8.10.2.3). The name has to be set before the widget
   is added to the page. If the enclosing `Form` element has an `Alt`, it has to be the same
   text (clause 8.9.4.2), which is up to the user. 🟢
+- krilla writes the `refs` attribute of a tag as its `Ref` entry, and checks that every id
+  in it belongs to a tag. 🟢
+- krilla requires a `TOCI` to have `refs`, on itself or on one of its descendants (clause
+  8.2.5.8). 🟢
+- krilla requires a `Note` to have `refs`, on itself or on one of its descendants (clause
+  8.2.5.14). That the content citing the note refers back to it is up to the user. 🟣
+- krilla rejects link annotations, actions and outline entries that lead to a destination,
+  since it cannot write structure destinations (clause 8.8). 🟢
 - krilla applies every check it applies for PDF/UA-1 (see `PDF_UA1.md`): codepoint mappings,
   alternative text, heading titles, tagging, font licenses, embedded file descriptions,
   embedded PDFs and the document outline. 🟢
@@ -30,12 +38,10 @@ See `README.md` for the meaning of each color.
 # Known to be missing
 
 - Destinations in the same document have to be structure destinations (clause 8.8). krilla
-  writes XYZ and named destinations for link annotations and outline entries. 🔴
-- Each `TOCI` has to identify its target with a `Ref` entry (clause 8.2.5.8). krilla does
-  not write `Ref`. 🔴
-- Footnotes and endnotes have to be linked to their references in both directions with `Ref`
-  (clause 8.2.5.14). krilla writes `FENote`, but not `Ref`, and not the `NoteType`
-  attribute, which then has its default value `None`. 🔴
+  only has XYZ and named destinations, and rejects them in this mode, so internal links and
+  outline entries are not possible yet. 🔴
+- krilla does not write the `NoteType` attribute of `FENote`, which then has its default
+  value `None`. 🔴
 - A list whose items have `Lbl` elements needs a `ListNumbering` other than `None` (clause
   8.2.5.25). This is up to the user and not checked. krilla does not have the PDF 2.0
   values `Ordered`, `Unordered` and `Description`. 🟣
@@ -48,9 +54,10 @@ See `README.md` for the meaning of each color.
 # Checked with
 
 veraPDF 1.30.3, profile "PDF/UA-2 + Tagged PDF": the `validate_pdf_ua2_example` test document
-(a title, a paragraph and a link to a URI) conforms, and so does
-`validate_pdf_ua2_form_and_footnote` (a paragraph, a footnote and a push button). So do a
-plain paragraph and a list with `Decimal` numbering. A link or outline entry with an XYZ
-destination fails 8.8, a `TOCI` fails 8.2.5.8 and a list with labels and
-`ListNumbering::None` fails 8.2.5.25. veraPDF does not check that a footnote's reference
-has a `Ref`; it only checks that the `Ref` entries that exist match up.
+(a title, a paragraph and a link to a URI) conforms, and so do
+`validate_pdf_ua2_form_and_footnote` (a footnote and its citation, and a push button) and
+`validate_pdf_ua2_toc` (a table of contents item and its heading). So do a plain paragraph
+and a list with `Decimal` numbering. A list with labels and `ListNumbering::None` fails
+8.2.5.25. Before krilla rejected them, a link or outline entry with an XYZ destination
+failed 8.8 and a `TOCI` without `Ref` failed 8.2.5.8. veraPDF does not check that a
+footnote's citation has a `Ref`; it only checks that the `Ref` entries that exist match up.

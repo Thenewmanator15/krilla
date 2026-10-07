@@ -151,6 +151,18 @@ pub enum ValidationError {
     /// This is currently forbidden in validated export because we cannot manually verify
     /// whether the file actually fulfills all the criteria for the export mode.
     EmbeddedPDF(Option<Location>),
+    /// A link annotation, an action or an outline entry leads to a destination in the
+    /// document.
+    ///
+    /// PDF/UA-2 requires such destinations to be structure destinations, which krilla
+    /// cannot write yet.
+    NonStructureDestination(Option<Location>),
+    /// A table of contents item or a note does not refer to any other tag.
+    ///
+    /// PDF/UA-2 requires a table of contents item to refer to the tag it lists, and a
+    /// note and the content that cites it to refer to each other. Use the `refs`
+    /// attribute for this.
+    MissingStructureRef(Option<Location>),
     /// A feature only available in a later PDF version was required.
     RequiresNewerPdfVersion(VersionedFeature, Option<Location>),
 }
@@ -574,6 +586,8 @@ impl Archival {
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::EmbeddedFile(_, _)
+                | ValidationError::NonStructureDestination(_)
+                | ValidationError::MissingStructureRef(_)
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
@@ -622,6 +636,8 @@ impl Archival {
                 | ValidationError::Transparency(_)
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
+                | ValidationError::NonStructureDestination(_)
+                | ValidationError::MissingStructureRef(_)
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
@@ -704,6 +720,8 @@ impl Archival {
                 )
                 | ValidationError::MissingTagging
                 | ValidationError::ContainsAdditionalActions(_)
+                | ValidationError::NonStructureDestination(_)
+                | ValidationError::MissingStructureRef(_)
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
@@ -1113,12 +1131,17 @@ pub enum Accessibility {
     UA1,
     /// The validator for the PDF/UA-2 standard, which requires PDF 2.0.
     ///
-    /// **This validator is incomplete.** krilla writes the PDF/UA-2 identification and the
-    /// `DisplayDocTitle` flag and applies the same checks as for [`Accessibility::UA1`],
-    /// but it does not yet write structure destinations for links and outline entries, or
-    /// `Ref` entries for table of contents items and footnotes. A document that uses
-    /// those will not conform, even though it is exported without an error. See
-    /// `PDF_UA2.md` for the details.
+    /// **This validator is incomplete.** krilla cannot write structure destinations yet,
+    /// which PDF/UA-2 requires for every destination in the same document. Link
+    /// annotations, actions and outline entries that lead to a destination are therefore
+    /// rejected with [`ValidationError::NonStructureDestination`]. See `PDF_UA2.md` for the
+    /// details.
+    ///
+    /// In addition to the requirements of [`Accessibility::UA1`]:
+    /// - A table of contents item needs to refer to the tag it lists with the `refs`
+    ///   attribute, on itself or on one of its descendants.
+    /// - A note and the content that cites it need to refer to each other with the
+    ///   `refs` attribute.
     ///
     /// The requirements listed for [`Accessibility::UA1`] apply here as well.
     UA2,
@@ -1127,6 +1150,17 @@ pub enum Accessibility {
 impl Accessibility {
     fn prohibits(self, error: &ValidationError) -> bool {
         match (self, error) {
+            // krilla cannot write what PDF/UA-2 asks for here yet, so it refuses.
+            (
+                Self::UA2,
+                ValidationError::NonStructureDestination(_)
+                | ValidationError::MissingStructureRef(_),
+            ) => true,
+            (
+                Self::UA1,
+                ValidationError::NonStructureDestination(_)
+                | ValidationError::MissingStructureRef(_),
+            ) => false,
             (
                 Self::UA1 | Self::UA2,
                 ValidationError::ContainsNotDefGlyph(_, _, _)

@@ -22,6 +22,7 @@ use pdf_writer::writers::OutlineItem;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
+use crate::configure::ValidationError;
 use crate::interactive::destination::XyzDestination;
 use crate::serialize::SerializeContext;
 
@@ -203,6 +204,7 @@ impl OutlineNode {
 
         outline_entry.title(TextStr(&self.text));
 
+        sc.register_validation_error(ValidationError::NonStructureDestination(sc.location));
         let dest_ref = sc.register_xyz_destination(self.destination.clone());
         outline_entry.pair(Name(b"Dest"), dest_ref);
 

@@ -295,7 +295,7 @@ impl LinkAnnotation {
 
         match &self.target {
             Target::Destination(destination) => {
-                destination.serialize(sc, annotation.insert(Name(b"Dest")))?
+                destination.serialize(sc, annotation.insert(Name(b"Dest")), location)?
             }
             Target::Action(action) => action.serialize(sc, annotation.action(), location)?,
         }

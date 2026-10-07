@@ -41,7 +41,7 @@ impl Action {
             }
             Action::Goto(dest) => {
                 let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
-                dest.serialize(sc, dest_entry)
+                dest.serialize(sc, dest_entry, location)
             }
             Action::ResetForm(reset_form) => {
                 reset_form.serialize(action);

@@ -841,6 +841,10 @@ impl TagGroup {
             *note_id += 1;
         }
 
+        if matches!(self.tag, TagKind::TOCI(_) | TagKind::Note(_)) && !self.has_refs() {
+            sc.register_validation_error(ValidationError::MissingStructureRef(tag.location));
+        }
+
         if self.tag.can_have_title() && tag.title().is_none_or(str::is_empty) {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
@@ -1116,6 +1120,18 @@ impl TagGroup {
         struct_elem.finish();
 
         Ok(Reference::Ref(elem_ref))
+    }
+
+    /// Whether this tag or one of its descendants refers to another tag.
+    fn has_refs(&self) -> bool {
+        self.tag
+            .as_any()
+            .refs()
+            .is_some_and(|refs| !refs.is_empty())
+            || self.children.iter().any(|child| match child {
+                Node::Group(group) => group.has_refs(),
+                Node::Leaf(_) => false,
+            })
     }
 
     /// Collect the ids of all tags that this tag or one of its descendants refers to.
