@@ -181,6 +181,53 @@ mod tests {
     }
 
     #[test]
+    fn pdf_ua2_requires_pdf_20() {
+        let config = ConfigurationBuilder::new()
+            .with_accessibility_validator(Accessibility::UA2)
+            .finish()
+            .unwrap();
+        assert_eq!(config.version(), PdfVersion::Pdf20);
+
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_accessibility_validator(Accessibility::UA2)
+                .with_version(PdfVersion::Pdf17)
+                .finish(),
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
+                PdfVersion::Pdf17,
+                _
+            ))
+        ));
+    }
+
+    #[test]
+    fn multi_validator_pdf_a4_pdf_ua2() {
+        let config = ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A4)
+            .with_accessibility_validator(Accessibility::UA2)
+            .finish()
+            .unwrap();
+        assert_eq!(config.validators().archival(), Some(Archival::A4));
+        assert_eq!(
+            config.validators().accessibility(),
+            Some(Accessibility::UA2)
+        );
+        assert_eq!(config.version(), PdfVersion::Pdf20);
+    }
+
+    #[test]
+    fn invalid_combination_pdf_a2a_pdf_ua2() {
+        // A2_A max is PDF 1.7; UA2 requires PDF 2.0 → no overlapping range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_archival_validator(Archival::A2_A)
+                .with_accessibility_validator(Accessibility::UA2)
+                .finish(),
+            Err(ConfigurationError::NoOverlappingValidatorsRange(_))
+        ));
+    }
+
+    #[test]
     fn empty_validators() {
         let config = ConfigurationBuilder::new().finish().unwrap();
         assert!(config.validators().is_empty());
