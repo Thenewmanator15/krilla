@@ -348,6 +348,15 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
 
 #[snapshot(document)]
 fn tagging_two_footnotes(document: &mut Document) {
+    tagging_two_footnotes_impl(document);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_two_footnotes_pdf_20(document: &mut Document) {
+    tagging_two_footnotes_impl(document);
+}
+
+fn tagging_two_footnotes_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut fn_group_1 = TagGroup::new(Tag::Note);
     let mut fn_group_2 = TagGroup::new(Tag::Note);
