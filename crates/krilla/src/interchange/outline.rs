@@ -204,7 +204,9 @@ impl OutlineNode {
 
         outline_entry.title(TextStr(&self.text));
 
-        sc.register_validation_error(ValidationError::NonStructureDestination(sc.location));
+        if self.destination.tag().is_none() {
+            sc.register_validation_error(ValidationError::NonStructureDestination(sc.location));
+        }
         let dest_ref = sc.register_xyz_destination(self.destination.clone());
         outline_entry.pair(Name(b"Dest"), dest_ref);
 

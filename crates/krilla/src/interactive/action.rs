@@ -40,8 +40,15 @@ impl Action {
                 Ok(())
             }
             Action::Goto(dest) => {
-                let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
-                dest.serialize(sc, dest_entry, location)
+                action.action_type(ActionType::GoTo);
+                if dest.is_structure_destination(sc) {
+                    // `D` is required and leads to the page, `SD` leads to the tag.
+                    dest.to_page_destination()
+                        .write(sc, action.insert(Name(b"D")))?;
+                    dest.write(sc, action.insert(Name(b"SD")))
+                } else {
+                    dest.serialize(sc, action.insert(Name(b"D")), location)
+                }
             }
             Action::ResetForm(reset_form) => {
                 reset_form.serialize(action);

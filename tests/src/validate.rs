@@ -1,11 +1,11 @@
 use std::num::NonZeroU16;
 
-use krilla::action::{LinkAction, ResetFormAction};
+use krilla::action::{Action, LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
 use krilla::configure::{Accessibility, ConfigurationBuilder, PdfVersion, ValidationError};
-use krilla::destination::XyzDestination;
+use krilla::destination::{NamedDestination, XyzDestination};
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::form::{FieldTree, FormField};
@@ -26,8 +26,8 @@ use crate::metadata::{custom_metadata, datetime};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, metadata_2, rect_to_path, red_fill, settings_1, settings_13, settings_15,
-    settings_17, settings_19, settings_20, settings_23, settings_24, settings_26, settings_32,
-    settings_33, settings_34, settings_7, settings_8, settings_9, square_stream,
+    settings_17, settings_19, settings_20, settings_23, settings_24, settings_25, settings_26,
+    settings_32, settings_33, settings_34, settings_7, settings_8, settings_9, square_stream,
     stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
@@ -889,7 +889,204 @@ fn validate_pdf_ua2_toc(document: &mut Document) {
     document.set_outline(Outline::new());
 }
 
-// What krilla cannot write for PDF/UA-2 yet, or what is missing, is an error.
+// Structure destinations: a link annotation, a go-to action, a named destination and an
+// outline entry all lead to the heading, which is written after the links.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_structure_destinations(document: &mut Document) {
+    structure_destinations_impl(document);
+}
+
+// Before PDF 2.0 the tag is ignored and the destinations lead to the page.
+#[snapshot(document, settings_15)]
+fn validate_pdf_ua1_destinations_with_tags(document: &mut Document) {
+    structure_destinations_impl(document);
+}
+
+fn structure_destinations_impl(document: &mut Document) {
+    let heading_id = TagId::from(*b"heading");
+    let to_heading =
+        || XyzDestination::new(1, Point::from_xy(0.0, 0.0)).with_tag(heading_id.clone());
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let mut text = |y: f32, text: &str| {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, y),
+            font.clone(),
+            12.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        id
+    };
+    let texts = [
+        text(50.0, "A link with a destination"),
+        text(100.0, "A link with a go-to action"),
+        text(150.0, "A link with a named destination"),
+    ];
+    surface.finish();
+
+    let targets = [
+        Target::Destination(to_heading().into()),
+        Target::Action(Action::Goto(to_heading().into())),
+        Target::Destination(NamedDestination::new("heading".to_string(), to_heading()).into()),
+    ];
+    let mut paragraph = TagGroup::new(Tag::P);
+    for (i, (text, target)) in texts.into_iter().zip(targets).enumerate() {
+        let annotation = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 40.0 + 50.0 * i as f32, 200.0, 12.0).unwrap(),
+                target,
+            ),
+            Some("To the heading".to_string()),
+        ));
+        let mut link = TagGroup::new(Tag::Link);
+        link.push(text);
+        link.push(annotation);
+        paragraph.push(link);
+    }
+    page.finish();
+
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let heading = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 50.0),
+        font.clone(),
+        12.0,
+        "A heading",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+    surface.finish();
+    page.finish();
+
+    let mut heading_group = TagGroup::new(
+        Tag::Hn(NonZeroU16::new(1).unwrap(), Some("A heading".to_string()))
+            .with_id(Some(heading_id.clone())),
+    );
+    heading_group.push(heading);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(paragraph);
+    tag_tree.push(heading_group);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    let mut outline = Outline::new();
+    outline.push_child(OutlineNode::new("A heading".to_string(), to_heading()));
+    document.set_outline(outline);
+}
+
+// Two links to the same place, each leading to a different tag. Returns how many
+// destinations are written.
+fn destinations_differing_in_tag(settings: SerializeSettings) -> usize {
+    let mut document = Document::new_with(settings);
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+    let mut text = |y: f32, text: &str| {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, y),
+            font.clone(),
+            12.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        id
+    };
+    let texts = [text(50.0, "One"), text(100.0, "Two")];
+    surface.finish();
+
+    let ids = [TagId::from(*b"one"), TagId::from(*b"two")];
+    let mut tag_tree = TagTree::new();
+    for (i, (text, id)) in texts.into_iter().zip(ids).enumerate() {
+        let dest = XyzDestination::new(0, Point::from_xy(0.0, 0.0)).with_tag(id.clone());
+        let annotation = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 40.0 + 50.0 * i as f32, 100.0, 12.0).unwrap(),
+                Target::Destination(dest.into()),
+            ),
+            Some("To the top".to_string()),
+        ));
+        let mut link = TagGroup::new(Tag::Link);
+        link.push(text);
+        link.push(annotation);
+        let mut paragraph = TagGroup::new(Tag::P.with_id(Some(id)));
+        paragraph.push(link);
+        tag_tree.push(paragraph);
+    }
+    page.finish();
+    document.set_tag_tree(tag_tree);
+
+    let pdf = document.finish().unwrap();
+    pdf.windows(4).filter(|window| window == b"/XYZ").count()
+}
+
+// Before PDF 2.0 the tag is not written, so the two destinations are one and the same.
+#[test]
+fn validate_destinations_differing_in_tag() {
+    assert_eq!(destinations_differing_in_tag(settings_1()), 1);
+    assert_eq!(destinations_differing_in_tag(settings_25()), 2);
+}
+
+// A structure destination has to lead to a tag that exists.
+#[test]
+fn validate_pdf_ua2_structure_destination_unknown_tag() {
+    let mut document = Document::new_with(settings_34());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+    let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 50.0),
+        font,
+        12.0,
+        "Some text",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+    surface.finish();
+    page.finish();
+
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(text);
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(paragraph);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    let id = TagId::from(*b"nowhere");
+    let mut outline = Outline::new();
+    outline.push_child(OutlineNode::new(
+        "Nowhere".to_string(),
+        XyzDestination::new(0, Point::from_xy(0.0, 0.0)).with_tag(id.clone()),
+    ));
+    document.set_outline(outline);
+
+    assert_eq!(document.finish(), Err(KrillaError::UnknownTagId(id, None)));
+}
+
+// A destination that does not lead to a tag, and a table of contents item or a note
+// that refers to nothing, are errors.
 #[test]
 fn validate_pdf_ua2_missing_requirements() {
     let mut document = Document::new_with(settings_34());
