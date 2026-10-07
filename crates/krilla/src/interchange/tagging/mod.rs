@@ -128,7 +128,7 @@
 use std::cell::LazyCell;
 use std::cmp::PartialEq;
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::io::Write as _;
 
 use pdf_writer::types::{RoleMapOpts, StructRole, StructRole2};
@@ -694,6 +694,15 @@ fn write_kind_custom(sc: &mut SerializeContext, struct_elem: &mut StructElement,
     }
 }
 
+/// The ids of the tags in a tag tree, while it is written.
+pub(crate) struct TagIds<'a> {
+    /// Maps each id to the tag that has it. Filled as the tags are written.
+    tree: &'a mut BTreeMap<TagId, Ref>,
+    /// The references of the tags that other tags refer to. Allocated up front, so
+    /// that a tag can refer to one that is written after it.
+    ref_targets: BTreeMap<TagId, Ref>,
+}
+
 /// A node in a tag tree.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
@@ -708,7 +717,7 @@ impl Node {
         &self,
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut BTreeMap<TagId, Ref>,
+        ids: &mut TagIds<'_>,
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Chunk,
@@ -717,7 +726,7 @@ impl Node {
             Node::Group(g) => Ok(Some(g.serialize(
                 sc,
                 parent_tree_map,
-                id_tree,
+                ids,
                 parent,
                 note_id,
                 struct_elems,
@@ -783,23 +792,25 @@ impl TagGroup {
         &self,
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut BTreeMap<TagId, Ref>,
+        ids: &mut TagIds<'_>,
         parent_ref: Ref,
         note_id: &mut u32,
         struct_elems: &mut Chunk,
     ) -> KrillaResult<Reference> {
-        let elem_ref = sc.new_ref();
+        // A tag that others refer to already has its reference, so that tags written
+        // before it can point to it.
+        let elem_ref = self
+            .tag
+            .as_any()
+            .id()
+            .and_then(|id| ids.ref_targets.get(id))
+            .copied()
+            .unwrap_or_else(|| sc.new_ref());
         let mut children_refs = vec![];
 
         for child in &self.children {
-            let serialized = child.serialize(
-                sc,
-                parent_tree_map,
-                id_tree,
-                elem_ref,
-                note_id,
-                struct_elems,
-            )?;
+            let serialized =
+                child.serialize(sc, parent_tree_map, ids, elem_ref, note_id, struct_elems)?;
             if let Some(ref_) = serialized {
                 children_refs.push(ref_);
             }
@@ -813,7 +824,7 @@ impl TagGroup {
         let pdf_version = sc.serialize_settings().pdf_version();
 
         if let Some(id) = tag.id() {
-            match id_tree.entry(id.clone()) {
+            match ids.tree.entry(id.clone()) {
                 Entry::Vacant(vacant) => {
                     struct_elem.id(Str(id.as_bytes()));
                     vacant.insert(elem_ref);
@@ -828,7 +839,7 @@ impl TagGroup {
             let mut id = TagId(SmallVec::new());
             _ = write!(&mut id.0, "Note {note_id}");
             struct_elem.id(Str(id.as_bytes()));
-            id_tree.insert(id, elem_ref);
+            ids.tree.insert(id, elem_ref);
 
             *note_id += 1;
         }
@@ -850,6 +861,15 @@ impl TagGroup {
             };
             match attr {
                 StructAttr::Id(_) => (), // Handled above
+                StructAttr::Refs(refs) => {
+                    // `Ref` is new in PDF 2.0. Unknown ids are reported by `validate`.
+                    let refs = refs
+                        .iter()
+                        .filter_map(|id| ids.ref_targets.get(id).copied());
+                    if pdf_version >= PdfVersion::Pdf20 && refs.clone().next().is_some() {
+                        struct_elem.refs(refs);
+                    }
+                }
                 StructAttr::Title(title) => {
                     struct_elem.title(TextStr(title));
                 }
@@ -1101,12 +1121,47 @@ impl TagGroup {
         Ok(Reference::Ref(elem_ref))
     }
 
+    /// Collect the ids of all tags that this tag or one of its descendants refers to.
+    fn collect_ref_targets(&self, ids: &mut BTreeSet<TagId>) {
+        if let Some(refs) = self.tag.as_any().refs() {
+            ids.extend(refs.iter().cloned());
+        }
+
+        for child in self.children.iter() {
+            if let Node::Group(group) = child {
+                group.collect_ref_targets(ids);
+            }
+        }
+    }
+
+    /// Allocate a reference for each tag whose id is in `ids`.
+    fn allocate_ref_targets(
+        &self,
+        sc: &mut SerializeContext,
+        ids: &BTreeSet<TagId>,
+        ref_targets: &mut BTreeMap<TagId, Ref>,
+    ) {
+        if let Some(id) = self.tag.as_any().id() {
+            if ids.contains(id) {
+                ref_targets
+                    .entry(id.clone())
+                    .or_insert_with(|| sc.new_ref());
+            }
+        }
+
+        for child in self.children.iter() {
+            if let Node::Group(group) = child {
+                group.allocate_ref_targets(sc, ids, ref_targets);
+            }
+        }
+    }
+
     fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
-        if let Some(headers) = self.tag.headers() {
-            for id in headers.iter() {
-                if !id_tree.contains_key(id) {
-                    return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location()));
-                }
+        let tag = self.tag.as_any();
+        let ids = self.tag.headers().into_iter().chain(tag.refs()).flatten();
+        for id in ids {
+            if !id_tree.contains_key(id) {
+                return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location()));
             }
         }
 
@@ -1177,13 +1232,37 @@ impl TagTree {
         // the IDs for multiple types of struct elements in the future.
         let mut note_id = 1;
 
+        // Tags can refer to tags that are written after them, so the tags that are
+        // referred to get their reference up front. `Ref` only exists in PDF 2.0, and
+        // nothing changes for a tree without any.
+        let mut ref_targets = BTreeMap::new();
+        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20 {
+            let mut wanted = BTreeSet::new();
+            for child in &self.children {
+                if let Node::Group(group) = child {
+                    group.collect_ref_targets(&mut wanted);
+                }
+            }
+            if !wanted.is_empty() {
+                for child in &self.children {
+                    if let Node::Group(group) = child {
+                        group.allocate_ref_targets(sc, &wanted, &mut ref_targets);
+                    }
+                }
+            }
+        }
+
+        let mut ids = TagIds {
+            tree: id_tree_map,
+            ref_targets,
+        };
         let mut children_refs = vec![];
 
         for child in &self.children {
             let serialized = child.serialize(
                 sc,
                 parent_tree_map,
-                id_tree_map,
+                &mut ids,
                 root_ref,
                 &mut note_id,
                 &mut struct_elems,

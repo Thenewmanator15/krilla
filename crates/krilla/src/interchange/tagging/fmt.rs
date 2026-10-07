@@ -190,6 +190,16 @@ impl Output for Attr {
                 Expanded(e) => writeln!(f, "/E: {e:?}"),
                 ActualText(actual) => writeln!(f, "/ActualText: {actual:?}"),
                 Title(title) => writeln!(f, "/T: {title:?}"),
+                Refs(refs) => {
+                    write!(f, "/Ref: [")?;
+                    if let Some((first, remainder)) = refs.split_first() {
+                        first.output(f)?;
+                        for id in remainder.iter() {
+                            write!(f, ", {}", id.display())?;
+                        }
+                    }
+                    writeln!(f, "]")
+                }
 
                 // Not a real attribute, is already displayed in tag kind.
                 HeadingLevel(_) => Ok(()),

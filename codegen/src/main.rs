@@ -86,7 +86,7 @@ impl AttrVariant<'_> {
             AccessorKind::Copy => self.ty,
             AccessorKind::AsRef(_) => self.ty,
             AccessorKind::Custom => match self.name {
-                "CellHeaders" => "impl IntoIterator<Item = TagId>",
+                "CellHeaders" | "Refs" => "impl IntoIterator<Item = TagId>",
                 #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom parameter type rule implemented for `{}`", self.name),
@@ -103,6 +103,7 @@ impl AttrVariant<'_> {
             }
             AccessorKind::Custom => self.param_mapping.get_or_init(|| match self.name {
                 "CellHeaders" => "headers.map(|ids| ids.into_iter().collect())",
+                "Refs" => "refs.map(|ids| ids.into_iter().collect())",
                 #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom parameter mapping rule implemented for `{}`", self.name),
@@ -118,7 +119,7 @@ impl AttrVariant<'_> {
             AccessorKind::Copy => self.ty,
             AccessorKind::AsRef(ret) => format!("&{ret}").leak(),
             AccessorKind::Custom => match self.name {
-                "CellHeaders" => "&[TagId]",
+                "CellHeaders" | "Refs" => "&[TagId]",
                 #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom return type rule implemented for `{}`", self.name),
@@ -134,7 +135,7 @@ impl AttrVariant<'_> {
             AccessorKind::Copy => "*val",
             AccessorKind::AsRef(_) => "val.as_ref()",
             AccessorKind::Custom => match self.name {
-                "CellHeaders" => "val.as_ref()",
+                "CellHeaders" | "Refs" => "val.as_ref()",
                 #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom return mapping rule implemented for `{}`", self.name),

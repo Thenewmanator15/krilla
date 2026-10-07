@@ -1,3 +1,5 @@
+use std::num::NonZeroU16;
+
 use krilla::action::{LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
@@ -13,7 +15,7 @@ use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
-use krilla::tagging::{ListNumbering, TableHeaderScope, Tag};
+use krilla::tagging::{ListNumbering, TableHeaderScope, Tag, TagId};
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla_macros::snapshot;
@@ -819,6 +821,151 @@ fn validate_pdf_ua2_example(document: &mut Document) {
     tag_tree.push(title);
     tag_tree.push(paragraph);
     document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    document.set_outline(Outline::new());
+}
+
+// The item in the table of contents refers to its heading, which comes after it.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_toc(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+    let mut text = |y: f32, text: &str| {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, y),
+            font.clone(),
+            12.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        id
+    };
+    let entry = text(50.0, "A heading");
+    let heading = text(100.0, "A heading");
+    let body = text(150.0, "This is some text");
+    surface.finish();
+    page.finish();
+
+    let heading_id = TagId::from(*b"heading");
+
+    let mut toci_reference = TagGroup::new(Tag::Reference);
+    toci_reference.push(entry);
+    let mut toci = TagGroup::new(Tag::TOCI.with_refs(Some([heading_id.clone()])));
+    toci.push(toci_reference);
+    let mut toc = TagGroup::new(Tag::TOC);
+    toc.push(toci);
+
+    let mut heading_group = TagGroup::new(
+        Tag::Hn(NonZeroU16::new(1).unwrap(), Some("A heading".to_string()))
+            .with_id(Some(heading_id)),
+    );
+    heading_group.push(heading);
+
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(body);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(toc);
+    tag_tree.push(heading_group);
+    tag_tree.push(paragraph);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    document.set_outline(Outline::new());
+}
+
+// A push button and a footnote: PDF/UA-2 wants `Contents` on the widget, `FENote` rather
+// than `Note`, and the footnote and the text that cites it to refer to each other.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_form_and_footnote(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font.clone(),
+        20.0,
+        "This is some text",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 150.0),
+        font,
+        10.0,
+        "This is a footnote",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    let button_appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+    surface.finish();
+
+    let mut button =
+        FormField::push_button("button".to_string()).with_alt_name("A button".to_string());
+    let button_annotation = {
+        let annotation = Annotation::from(button.new_widget(
+            Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+            button_appearance,
+        ));
+        page.add_widget_annotation(&mut button, annotation)
+    };
+    page.finish();
+
+    let citation_id = TagId::from(*b"citation");
+    let note_id = TagId::from(*b"note");
+
+    let mut citation = TagGroup::new(
+        Tag::Span
+            .with_id(Some(citation_id.clone()))
+            .with_refs(Some([note_id.clone()])),
+    );
+    citation.push(id1);
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(citation);
+
+    let mut note_paragraph = TagGroup::new(Tag::P);
+    note_paragraph.push(id2);
+    let mut note = TagGroup::new(
+        Tag::Note
+            .with_id(Some(note_id))
+            .with_refs(Some([citation_id])),
+    );
+    note.push(note_paragraph);
+
+    let mut form = TagGroup::new(Tag::Form);
+    form.push(button_annotation);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(paragraph);
+    tag_tree.push(note);
+    tag_tree.push(form);
+    document.set_tag_tree(tag_tree);
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
 
     let metadata = Metadata::new()
         .language("en".to_string())
