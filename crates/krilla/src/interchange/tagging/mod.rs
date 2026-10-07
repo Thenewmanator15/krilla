@@ -1251,7 +1251,7 @@ impl TagTree {
         // Tags can refer to tags that are written after them, so the tags that are
         // referred to get their reference up front. `Ref` only exists in PDF 2.0, and
         // nothing changes for a tree without any.
-        let mut ref_targets = BTreeMap::new();
+        let mut ref_targets = sc.structure_destination_targets().clone();
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20 {
             let mut wanted = BTreeSet::new();
             for child in &self.children {

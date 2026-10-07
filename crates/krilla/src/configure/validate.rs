@@ -140,11 +140,11 @@ pub enum ValidationError {
     /// This is currently forbidden in validated export because we cannot manually verify
     /// whether the file actually fulfills all the criteria for the export mode.
     EmbeddedPDF(Option<Location>),
-    /// A link annotation, an action or an outline entry leads to a destination in the
-    /// document.
+    /// A link annotation, an action or an outline entry leads to a destination that does
+    /// not lead to a tag.
     ///
-    /// PDF/UA-2 requires such destinations to be structure destinations, which krilla
-    /// cannot write yet.
+    /// PDF/UA-2 requires destinations in the same document to be structure destinations.
+    /// Use `XyzDestination::with_tag` to make it one.
     NonStructureDestination(Option<Location>),
     /// A table of contents item or a note does not refer to any other tag.
     ///
@@ -1108,13 +1108,11 @@ pub enum Accessibility {
     UA1,
     /// The validator for the PDF/UA-2 standard, which requires PDF 2.0.
     ///
-    /// **This validator is incomplete.** krilla cannot write structure destinations yet,
-    /// which PDF/UA-2 requires for every destination in the same document. Link
-    /// annotations, actions and outline entries that lead to a destination are therefore
-    /// rejected with [`ValidationError::NonStructureDestination`]. See `PDF_UA2.md` for the
-    /// details.
+    /// **This validator is incomplete.** See `PDF_UA2.md` for what is covered.
     ///
     /// In addition to the requirements of [`Accessibility::UA1`]:
+    /// - Every destination in the same document needs to be a structure destination,
+    ///   i.e. lead to a tag. See `XyzDestination::with_tag`.
     /// - A table of contents item needs to refer to the tag it lists with the `refs`
     ///   attribute, on itself or on one of its descendants.
     /// - A note and the content that cites it need to refer to each other with the

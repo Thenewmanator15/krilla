@@ -15,6 +15,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Point;
+use crate::interchange::tagging::TagId;
 use crate::serialize::{PageInfo, SerializeContext};
 use crate::surface::Location;
 
@@ -34,8 +35,37 @@ impl Destination {
         buffer: Obj,
         location: Option<Location>,
     ) -> KrillaResult<()> {
-        sc.register_validation_error(ValidationError::NonStructureDestination(location));
+        if self.tag().is_none() {
+            sc.register_validation_error(ValidationError::NonStructureDestination(location));
+        }
 
+        self.write(sc, buffer)
+    }
+
+    /// The tag that the destination leads to, if any.
+    pub(crate) fn tag(&self) -> Option<&TagId> {
+        match self {
+            Destination::Xyz(xyz) => xyz.tag(),
+            Destination::Named(named) => named.xyz_dest.tag(),
+        }
+    }
+
+    /// Whether the destination is written as a structure destination.
+    pub(crate) fn is_structure_destination(&self, sc: &SerializeContext) -> bool {
+        self.tag().is_some() && sc.writes_structure_destinations()
+    }
+
+    /// The same destination, but leading to the page rather than to a tag. A named
+    /// destination stays as it is, since its name can only stand for one destination.
+    pub(crate) fn to_page_destination(&self) -> Self {
+        match self {
+            Destination::Xyz(xyz) => Destination::Xyz(xyz.without_tag()),
+            Destination::Named(named) => Destination::Named(named.clone()),
+        }
+    }
+
+    /// Write the destination without checking it against the validators.
+    pub(crate) fn write(&self, sc: &mut SerializeContext, buffer: Obj) -> KrillaResult<()> {
         match self {
             Destination::Xyz(xyz) => {
                 let ref_ = sc.register_xyz_destination(xyz.clone());
@@ -93,6 +123,7 @@ impl NamedDestination {
 struct XyzDestRepr {
     page_index: usize,
     point: Point,
+    tag: Option<TagId>,
 }
 
 impl Hash for XyzDestRepr {
@@ -100,6 +131,7 @@ impl Hash for XyzDestRepr {
         self.page_index.hash(state);
         self.point.x.to_bits().hash(state);
         self.point.y.to_bits().hash(state);
+        self.tag.hash(state);
     }
 }
 
@@ -108,6 +140,7 @@ impl PartialEq for XyzDestRepr {
         self.page_index == other.page_index
             && self.point.x == other.point.x
             && self.point.y == other.point.y
+            && self.tag == other.tag
     }
 }
 
@@ -128,7 +161,39 @@ impl XyzDestination {
     /// target page, and point indicates the specific location on that page that should be
     /// targeted. If the `page_index` is out of range, export will panic.
     pub fn new(page_index: usize, point: Point) -> Self {
-        Self(Arc::new(XyzDestRepr { page_index, point }))
+        Self(Arc::new(XyzDestRepr {
+            page_index,
+            point,
+            tag: None,
+        }))
+    }
+
+    /// Let the destination lead to the tag with the given id, which makes it a structure
+    /// destination.
+    ///
+    /// A structure destination names a tag (a structure element) as its target rather
+    /// than a page. The page and point are still used for the position to scroll to.
+    /// PDF/UA-2 requires every destination in the same document to be one.
+    ///
+    /// Structure destinations are only written for PDF 2.0 and when the document has a
+    /// tag tree. Otherwise, the tag is ignored. The tag tree has to contain a tag with
+    /// this id.
+    pub fn with_tag(self, tag: TagId) -> Self {
+        Self(Arc::new(XyzDestRepr {
+            page_index: self.0.page_index,
+            point: self.0.point,
+            tag: Some(tag),
+        }))
+    }
+
+    /// The tag that the destination leads to, if any.
+    pub(crate) fn tag(&self) -> Option<&TagId> {
+        self.0.tag.as_ref()
+    }
+
+    /// The same destination, but leading to the page rather than to a tag.
+    pub(crate) fn without_tag(&self) -> Self {
+        Self::new(self.0.page_index, self.0.point)
     }
 
     pub(crate) fn serialize(
@@ -163,8 +228,14 @@ impl XyzDestination {
         let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
         invert_transform.map_point(&mut mapped_point);
 
+        // A structure destination has a structure element in place of the page.
+        let target = self
+            .tag()
+            .and_then(|id| sc.structure_destination_target(id))
+            .unwrap_or(page_ref);
+
         destination
-            .page(page_ref)
+            .page(target)
             .xyz(mapped_point.x, mapped_point.y, None);
     }
 }

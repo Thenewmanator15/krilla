@@ -24,7 +24,7 @@ use crate::graphics::separation::SeparationColorSpace;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::outline::Outline;
-use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
+use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagId, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 #[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfSerializerContext};
@@ -257,6 +257,9 @@ pub(crate) struct SerializeContext {
     pub(crate) pdf2_ns: Pdf2Namespaces,
     /// All global objects, such as PDF fonts, that are populated over time.
     pub(crate) global_objects: GlobalObjects,
+    /// The references of the tags that structure destinations lead to. They are
+    /// allocated before the tag tree is written, so that the destinations can use them.
+    structure_destination_targets: BTreeMap<TagId, Ref>,
     /// Information for each page written so far, index by the page index.
     page_infos: Vec<PageInfo>,
     /// Keep track of object hashes and their corresponding reference. This is used for
@@ -310,6 +313,7 @@ impl SerializeContext {
             global_objects: GlobalObjects::default(),
             cur_ref,
             page_tree_ref,
+            structure_destination_targets: BTreeMap::new(),
             page_infos: vec![],
             location: None,
             validation_errors: vec![],
@@ -471,6 +475,7 @@ impl SerializeContext {
         self.serialize_page_tree(&mut chunk_container);
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
+        self.allocate_structure_destination_targets();
         self.serialize_xyz_destinations(&mut chunk_container)?;
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
@@ -809,6 +814,41 @@ impl SerializeContext {
         chunk_container.non_stream.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
+    /// The reference of the tag with the given id, if a structure destination leads to it.
+    pub(crate) fn structure_destination_target(&self, id: &TagId) -> Option<Ref> {
+        self.structure_destination_targets.get(id).copied()
+    }
+
+    /// The references of all tags that structure destinations lead to.
+    pub(crate) fn structure_destination_targets(&self) -> &BTreeMap<TagId, Ref> {
+        &self.structure_destination_targets
+    }
+
+    /// Structure destinations are new in PDF 2.0 and need a tag tree to lead into.
+    pub(crate) fn writes_structure_destinations(&self) -> bool {
+        self.serialize_settings.pdf_version() >= PdfVersion::Pdf20
+            && self.global_objects.tag_tree.is_some()
+    }
+
+    fn allocate_structure_destination_targets(&mut self) {
+        if !self.writes_structure_destinations() {
+            return;
+        }
+
+        let ids = self
+            .global_objects
+            .xyz_destinations
+            .iter()
+            .filter_map(|(_, dest)| dest.tag().cloned())
+            .collect::<Vec<_>>();
+        for id in ids {
+            if !self.structure_destination_targets.contains_key(&id) {
+                let ref_ = self.new_ref();
+                self.structure_destination_targets.insert(id, ref_);
+            }
+        }
+    }
+
     fn serialize_xyz_destinations(
         &mut self,
         chunk_container: &mut ChunkContainer,
@@ -837,6 +877,13 @@ impl SerializeContext {
             )?;
 
             root.validate(&id_tree_map)?;
+            if let Some(id) = self
+                .structure_destination_targets
+                .keys()
+                .find(|id| !id_tree_map.contains_key(id))
+            {
+                return Err(KrillaError::UnknownTagId(id.clone(), None));
+            }
 
             let mut chunk = self.new_chunk();
             let mut tree = chunk
