@@ -5,13 +5,14 @@ use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
 use krilla::configure::{Accessibility, ConfigurationBuilder, PdfVersion, ValidationError};
+use krilla::destination::XyzDestination;
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::form::{FieldTree, FormField};
 use krilla::geom::{Point, Rect, Size};
 use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
-use krilla::outline::Outline;
+use krilla::outline::{Outline, OutlineNode};
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
@@ -26,8 +27,8 @@ use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, metadata_2, rect_to_path, red_fill, settings_1, settings_13, settings_15,
     settings_17, settings_19, settings_20, settings_23, settings_24, settings_26, settings_32,
-    settings_33, settings_7, settings_8, settings_9, square_stream, stops_with_2_solid_1,
-    validation_errors, youtube_link, NOTO_SANS,
+    settings_33, settings_34, settings_7, settings_8, settings_9, square_stream,
+    stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -886,6 +887,91 @@ fn validate_pdf_ua2_toc(document: &mut Document) {
     document.set_metadata(metadata);
 
     document.set_outline(Outline::new());
+}
+
+// What krilla cannot write for PDF/UA-2 yet, or what is missing, is an error.
+#[test]
+fn validate_pdf_ua2_missing_requirements() {
+    let mut document = Document::new_with(settings_34());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+    let mut text = |y: f32, text: &str| {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, y),
+            font.clone(),
+            12.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        id
+    };
+    let entry = text(50.0, "An entry");
+    let note_text = text(100.0, "A note");
+    let link_text = text(150.0, "A link");
+    surface.finish();
+
+    let link_loc = loc(1);
+    let link_annotation = page.add_tagged_annotation(
+        Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 140.0, 100.0, 20.0).unwrap(),
+                Target::Destination(XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into()),
+            ),
+            Some("To the top".to_string()),
+        )
+        .with_location(Some(link_loc)),
+    );
+    page.finish();
+
+    let toci_loc = loc(2);
+    let mut toci_reference = TagGroup::new(Tag::Reference);
+    toci_reference.push(entry);
+    let mut toci = TagGroup::new(Tag::TOCI.with_location(Some(toci_loc)));
+    toci.push(toci_reference);
+    let mut toc = TagGroup::new(Tag::TOC);
+    toc.push(toci);
+
+    let note_loc = loc(3);
+    let mut note_paragraph = TagGroup::new(Tag::P);
+    note_paragraph.push(note_text);
+    let mut note = TagGroup::new(Tag::Note.with_location(Some(note_loc)));
+    note.push(note_paragraph);
+
+    let mut link = TagGroup::new(Tag::Link);
+    link.push(link_text);
+    link.push(link_annotation);
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(link);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(toc);
+    tag_tree.push(note);
+    tag_tree.push(paragraph);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    let mut outline = Outline::new();
+    outline.push_child(OutlineNode::new(
+        "Top".to_string(),
+        XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+    ));
+    document.set_outline(outline);
+
+    let errors = validation_errors(document.finish());
+    assert!(errors.contains(&ValidationError::NonStructureDestination(Some(link_loc))));
+    assert!(errors.contains(&ValidationError::NonStructureDestination(None)));
+    assert!(errors.contains(&ValidationError::MissingStructureRef(Some(toci_loc))));
+    assert!(errors.contains(&ValidationError::MissingStructureRef(Some(note_loc))));
+    assert_eq!(errors.len(), 4);
 }
 
 // A push button and a footnote: PDF/UA-2 wants `Contents` on the widget, `FENote` rather

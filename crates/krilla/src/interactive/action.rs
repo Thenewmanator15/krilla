@@ -12,6 +12,7 @@ use pdf_writer::{Name, Str};
 use crate::error::KrillaResult;
 use crate::interactive::destination::Destination;
 use crate::serialize::SerializeContext;
+use crate::surface::Location;
 
 /// A type of action.
 pub enum Action {
@@ -26,6 +27,7 @@ impl Action {
         &self,
         sc: &mut SerializeContext,
         mut action: pdf_writer::writers::Action,
+        location: Option<Location>,
     ) -> KrillaResult<()> {
         match self {
             Action::Link(link) => {
@@ -35,7 +37,7 @@ impl Action {
             }
             Action::Goto(dest) => {
                 let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
-                dest.serialize(sc, dest_entry)
+                dest.serialize(sc, dest_entry, location)
             }
         }
     }

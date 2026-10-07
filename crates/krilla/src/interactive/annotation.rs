@@ -76,7 +76,7 @@ impl Annotation {
             .start::<pdf_writer::writers::Annotation>();
 
         self.annotation_type
-            .serialize_type(sc, &mut annotation, page_height)?;
+            .serialize_type(sc, &mut annotation, page_height, self.location)?;
 
         let AnnotationType::Link(l) = &self.annotation_type;
         // Only set the print flag when really necessary (only PDF/A). Don't
@@ -124,9 +124,10 @@ impl AnnotationType {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
+        location: Option<Location>,
     ) -> KrillaResult<()> {
         match self {
-            AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height),
+            AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height, location),
         }
     }
 }
@@ -232,6 +233,7 @@ impl LinkAnnotation {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
+        location: Option<Location>,
     ) -> KrillaResult<()> {
         annotation.subtype(pdf_writer::types::AnnotationType::Link);
 
@@ -275,9 +277,9 @@ impl LinkAnnotation {
 
         match &self.target {
             Target::Destination(destination) => {
-                destination.serialize(sc, annotation.insert(Name(b"Dest")))
+                destination.serialize(sc, annotation.insert(Name(b"Dest")), location)
             }
-            Target::Action(action) => action.serialize(sc, annotation.action()),
+            Target::Action(action) => action.serialize(sc, annotation.action(), location),
         }
     }
 }
