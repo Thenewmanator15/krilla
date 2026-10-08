@@ -36,7 +36,7 @@ krilla-macros = { path = "crates/krilla-macros" }
 oxipng = "10.1.0"
 parley = "0.8.0"
 paste = "1.0.15"
-pdf-writer = { version = "0.15.0" }
+pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "fdf090125f1e7209fa630c4ca1f5f29910c87c93" }
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"

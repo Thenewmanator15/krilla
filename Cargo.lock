@@ -760,7 +760,7 @@ source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497eff
 dependencies = [
  "flate2",
  "hayro-syntax",
- "pdf-writer",
+ "pdf-writer 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hash",
 ]
 
@@ -1017,7 +1017,7 @@ dependencies = [
  "imagesize 0.14.0",
  "indexmap",
  "parley",
- "pdf-writer",
+ "pdf-writer 0.15.0 (git+https://github.com/typst/pdf-writer?rev=fdf090125f1e7209fa630c4ca1f5f29910c87c93)",
  "png 0.18.1",
  "pretty_assertions",
  "rayon",
@@ -1339,6 +1339,17 @@ name = "pdf-writer"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5e456864a7a304047bff84977dc6fb162bd956475d40ba50b2dcecaada7f753"
+dependencies = [
+ "bitflags 2.11.1",
+ "itoa",
+ "memchr",
+ "ryu",
+]
+
+[[package]]
+name = "pdf-writer"
+version = "0.15.0"
+source = "git+https://github.com/typst/pdf-writer?rev=fdf090125f1e7209fa630c4ca1f5f29910c87c93#fdf090125f1e7209fa630c4ca1f5f29910c87c93"
 dependencies = [
  "bitflags 2.11.1",
  "itoa",
