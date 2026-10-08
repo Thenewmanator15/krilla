@@ -16,7 +16,7 @@ use krilla::outline::{Outline, OutlineNode};
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
-use krilla::tagging::{ListNumbering, TableHeaderScope, Tag, TagId};
+use krilla::tagging::{ListNumbering, NoteType, TableHeaderScope, Tag, TagId};
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla_macros::snapshot;
@@ -829,6 +829,62 @@ fn validate_pdf_ua2_aside_and_description_list(document: &mut Document) {
     document.set_metadata(metadata);
 }
 
+// A bibliography is a section with the role `doc-bibliography` (8.2.5.31).
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_bibliography_role(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let mut ids = vec![];
+    for (index, text) in ["Bibliography", "A. Author, A title, 2026."]
+        .into_iter()
+        .enumerate()
+    {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, 50.0 * (index + 1) as f32),
+            font.clone(),
+            20.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        ids.push(id);
+    }
+    surface.finish();
+    page.finish();
+    let [heading_id, entry_id] = ids.try_into().unwrap();
+
+    let mut heading = TagGroup::new(Tag::Hn(
+        NonZeroU16::new(1).unwrap(),
+        Some("Bibliography".to_string()),
+    ));
+    heading.push(heading_id);
+    let mut entry = TagGroup::new(Tag::BibEntry);
+    entry.push(entry_id);
+    let mut body = TagGroup::new(Tag::LBody);
+    body.push(entry);
+    let mut item = TagGroup::new(Tag::LI);
+    item.push(body);
+    let mut list = TagGroup::new(Tag::L(ListNumbering::None));
+    list.push(item);
+    let mut section =
+        TagGroup::new(Tag::Section.with_aria_role(Some("doc-bibliography".to_string())));
+    section.push(heading);
+    section.push(list);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(section);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("A bibliography".to_string());
+    document.set_metadata(metadata);
+}
+
 // PDF/UA-2 requires a mathematical expression to be given as MathML (8.2.5.29). The two
 // formulas have the same MathML, which is written as one associated file.
 #[snapshot(document, settings_34)]
@@ -1286,7 +1342,8 @@ fn validate_pdf_ua2_form_and_footnote(document: &mut Document) {
     let mut note = TagGroup::new(
         Tag::Note
             .with_id(Some(note_id))
-            .with_refs(Some([citation_id])),
+            .with_refs(Some([citation_id]))
+            .with_note_type(Some(NoteType::Footnote)),
     );
     note.push(note_paragraph);
 

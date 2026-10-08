@@ -372,6 +372,41 @@ impl TagKind {
         self.as_any().mathml()
     }
 
+    /// Whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    pub fn note_type(&self) -> Option<NoteType> {
+        self.as_any().note_type()
+    }
+
+    /// A WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn aria_role(&self) -> Option<&str> {
+        self.as_any().aria_role()
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn set_aria_role(&mut self, aria_role: Option<String>) {
+        self.as_any_mut().set_aria_role(aria_role);
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn with_aria_role(mut self, aria_role: Option<String>) -> Self {
+        self.set_aria_role(aria_role);
+        self
+    }
+
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.as_any().title()
@@ -935,6 +970,41 @@ impl AnyTag {
         self.get_struct(StructAttr::MATH_ML).map(StructAttr::unwrap_mathml)
     }
 
+    /// Whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    pub fn note_type(&self) -> Option<NoteType> {
+        self.get_struct(StructAttr::NOTE_TYPE).map(StructAttr::unwrap_note_type)
+    }
+
+    /// A WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn aria_role(&self) -> Option<&str> {
+        self.get_struct(StructAttr::ARIA_ROLE).map(StructAttr::unwrap_aria_role)
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn set_aria_role(&mut self, aria_role: Option<String>) {
+        self.set_or_remove_struct(StructAttr::ARIA_ROLE, aria_role.map(StructAttr::AriaRole));
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn with_aria_role(mut self, aria_role: Option<String>) -> Self {
+        self.set_aria_role(aria_role);
+        self
+    }
+
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.get_struct(StructAttr::TITLE).map(StructAttr::unwrap_title)
@@ -1416,6 +1486,34 @@ impl<T> Tag<T> {
     /// `String` and tags without it stay the size they were.
     pub fn with_refs(mut self, refs: Option<impl IntoIterator<Item = TagId>>) -> Self {
         self.set_refs(refs);
+        self
+    }
+
+    /// A WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn aria_role(&self) -> Option<&str> {
+        self.inner.get_struct(StructAttr::ARIA_ROLE).map(StructAttr::unwrap_aria_role)
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn set_aria_role(&mut self, aria_role: Option<String>) {
+        self.inner.set_or_remove_struct(StructAttr::ARIA_ROLE, aria_role.map(StructAttr::AriaRole));
+    }
+
+    /// Set a WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    pub fn with_aria_role(mut self, aria_role: Option<String>) -> Self {
+        self.set_aria_role(aria_role);
         self
     }
 
@@ -3592,6 +3690,28 @@ impl Tag<kind::Note> {
     #[allow(non_upper_case_globals)]
     pub const Note: Tag<kind::Note> = Tag::new();
 
+    /// Whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    pub fn note_type(&self) -> Option<NoteType> {
+        self.inner.get_struct(StructAttr::NOTE_TYPE).map(StructAttr::unwrap_note_type)
+    }
+
+    /// Set whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    pub fn set_note_type(&mut self, note_type: Option<NoteType>) {
+        self.inner.set_or_remove_struct(StructAttr::NOTE_TYPE, note_type.map(StructAttr::NoteType));
+    }
+
+    /// Set whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    pub fn with_note_type(mut self, note_type: Option<NoteType>) -> Self {
+        self.set_note_type(note_type);
+        self
+    }
+
     /// The spacing before the block-level element.
     pub fn space_before(&self) -> Option<f32> {
         self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
@@ -4391,6 +4511,16 @@ pub(crate) enum StructAttr {
     /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
     /// mathematical expressions.
     MathMl(String),
+    /// Whether a note is a footnote or an endnote.
+    ///
+    /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+    NoteType(NoteType),
+    /// A WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+    /// `doc-bibliography` on the section that holds a bibliography. It must not
+    /// contradict the tag.
+    ///
+    /// Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+    AriaRole(String),
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     Title(String),
     /// The heading level
@@ -4405,8 +4535,10 @@ impl StructAttr {
     pub(crate) const ACTUAL_TEXT: usize = 4;
     pub(crate) const REFS: usize = 5;
     pub(crate) const MATH_ML: usize = 6;
-    pub(crate) const TITLE: usize = 7;
-    pub(crate) const HEADING_LEVEL: usize = 8;
+    pub(crate) const NOTE_TYPE: usize = 7;
+    pub(crate) const ARIA_ROLE: usize = 8;
+    pub(crate) const TITLE: usize = 9;
+    pub(crate) const HEADING_LEVEL: usize = 10;
 
         #[inline(always)]
         fn unwrap_id(&self) -> &TagId {
@@ -4465,6 +4597,22 @@ impl StructAttr {
         }
 
         #[inline(always)]
+        fn unwrap_note_type(&self) -> NoteType {
+            match self {
+                Self::NoteType(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_aria_role(&self) -> &str {
+            match self {
+                Self::AriaRole(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
         fn unwrap_title(&self) -> &str {
             match self {
                 Self::Title(val) => val.as_ref(),
@@ -4491,6 +4639,8 @@ impl Ordinal for StructAttr {
             Self::ActualText(_) => Self::ACTUAL_TEXT,
             Self::Refs(_) => Self::REFS,
             Self::MathMl(_) => Self::MATH_ML,
+            Self::NoteType(_) => Self::NOTE_TYPE,
+            Self::AriaRole(_) => Self::ARIA_ROLE,
             Self::Title(_) => Self::TITLE,
             Self::HeadingLevel(_) => Self::HEADING_LEVEL,
         }
@@ -4504,7 +4654,7 @@ pub(crate) enum ListAttr {
 }
 
 impl ListAttr {
-    pub(crate) const NUMBERING: usize = 9;
+    pub(crate) const NUMBERING: usize = 11;
 
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
@@ -4543,11 +4693,11 @@ pub(crate) enum TableAttr {
 }
 
 impl TableAttr {
-    pub(crate) const SUMMARY: usize = 10;
-    pub(crate) const HEADER_SCOPE: usize = 11;
-    pub(crate) const CELL_HEADERS: usize = 12;
-    pub(crate) const ROW_SPAN: usize = 13;
-    pub(crate) const COL_SPAN: usize = 14;
+    pub(crate) const SUMMARY: usize = 12;
+    pub(crate) const HEADER_SCOPE: usize = 13;
+    pub(crate) const CELL_HEADERS: usize = 14;
+    pub(crate) const ROW_SPAN: usize = 15;
+    pub(crate) const COL_SPAN: usize = 16;
 
         #[inline(always)]
         fn unwrap_summary(&self) -> &str {
@@ -4669,36 +4819,36 @@ pub(crate) enum LayoutAttr {
 }
 
 impl LayoutAttr {
-    pub(crate) const PLACEMENT: usize = 15;
-    pub(crate) const WRITING_MODE: usize = 16;
-    pub(crate) const B_BOX: usize = 17;
-    pub(crate) const WIDTH: usize = 18;
-    pub(crate) const HEIGHT: usize = 19;
-    pub(crate) const BACKGROUND_COLOR: usize = 20;
-    pub(crate) const BORDER_COLOR: usize = 21;
-    pub(crate) const BORDER_STYLE: usize = 22;
-    pub(crate) const BORDER_THICKNESS: usize = 23;
-    pub(crate) const PADDING: usize = 24;
-    pub(crate) const COLOR: usize = 25;
-    pub(crate) const SPACE_BEFORE: usize = 26;
-    pub(crate) const SPACE_AFTER: usize = 27;
-    pub(crate) const START_INDENT: usize = 28;
-    pub(crate) const END_INDENT: usize = 29;
-    pub(crate) const TEXT_INDENT: usize = 30;
-    pub(crate) const TEXT_ALIGN: usize = 31;
-    pub(crate) const BLOCK_ALIGN: usize = 32;
-    pub(crate) const INLINE_ALIGN: usize = 33;
-    pub(crate) const TABLE_BORDER_STYLE: usize = 34;
-    pub(crate) const TABLE_PADDING: usize = 35;
-    pub(crate) const BASELINE_SHIFT: usize = 36;
-    pub(crate) const LINE_HEIGHT: usize = 37;
-    pub(crate) const TEXT_DECORATION_COLOR: usize = 38;
-    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 39;
-    pub(crate) const TEXT_DECORATION_TYPE: usize = 40;
-    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 41;
-    pub(crate) const COLUMN_COUNT: usize = 42;
-    pub(crate) const COLUMN_GAP: usize = 43;
-    pub(crate) const COLUMN_WIDTHS: usize = 44;
+    pub(crate) const PLACEMENT: usize = 17;
+    pub(crate) const WRITING_MODE: usize = 18;
+    pub(crate) const B_BOX: usize = 19;
+    pub(crate) const WIDTH: usize = 20;
+    pub(crate) const HEIGHT: usize = 21;
+    pub(crate) const BACKGROUND_COLOR: usize = 22;
+    pub(crate) const BORDER_COLOR: usize = 23;
+    pub(crate) const BORDER_STYLE: usize = 24;
+    pub(crate) const BORDER_THICKNESS: usize = 25;
+    pub(crate) const PADDING: usize = 26;
+    pub(crate) const COLOR: usize = 27;
+    pub(crate) const SPACE_BEFORE: usize = 28;
+    pub(crate) const SPACE_AFTER: usize = 29;
+    pub(crate) const START_INDENT: usize = 30;
+    pub(crate) const END_INDENT: usize = 31;
+    pub(crate) const TEXT_INDENT: usize = 32;
+    pub(crate) const TEXT_ALIGN: usize = 33;
+    pub(crate) const BLOCK_ALIGN: usize = 34;
+    pub(crate) const INLINE_ALIGN: usize = 35;
+    pub(crate) const TABLE_BORDER_STYLE: usize = 36;
+    pub(crate) const TABLE_PADDING: usize = 37;
+    pub(crate) const BASELINE_SHIFT: usize = 38;
+    pub(crate) const LINE_HEIGHT: usize = 39;
+    pub(crate) const TEXT_DECORATION_COLOR: usize = 40;
+    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 41;
+    pub(crate) const TEXT_DECORATION_TYPE: usize = 42;
+    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 43;
+    pub(crate) const COLUMN_COUNT: usize = 44;
+    pub(crate) const COLUMN_GAP: usize = 45;
+    pub(crate) const COLUMN_WIDTHS: usize = 46;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {

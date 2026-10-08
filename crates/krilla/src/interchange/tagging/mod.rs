@@ -131,7 +131,7 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::io::Write as _;
 
-use pdf_writer::types::{RoleMapOpts, StructRole, StructRole2};
+use pdf_writer::types::{AttributeOwner, RoleMapOpts, StructRole, StructRole2};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
@@ -891,6 +891,8 @@ impl TagGroup {
                         struct_elem.insert(Name(b"AF")).array().item(file);
                     }
                 }
+                // Written with the other attribute owners below.
+                StructAttr::NoteType(_) | StructAttr::AriaRole(_) => (),
                 StructAttr::Title(title) => {
                     struct_elem.title(TextStr(title));
                 }
@@ -919,6 +921,18 @@ impl TagGroup {
         }
 
         let mut attributes = LazyCell::new(|| struct_elem.attributes());
+
+        // The `FENote` and `ARIA-1.1` attribute owners are new in PDF 2.0.
+        if pdf_version >= PdfVersion::Pdf20 {
+            if let Some(note_type) = tag.note_type() {
+                attributes.push().note().note_type(note_type.to_pdf());
+            }
+            if let Some(role) = tag.aria_role().filter(|role| !role.is_empty()) {
+                let mut aria = attributes.push();
+                aria.owner(AttributeOwner::Aria1_1, true);
+                aria.pair(Name(b"role"), Name(role.as_bytes()));
+            }
+        }
 
         // Lazily initialize the list attributes to avoid an empty array.
         let mut list_attributes = LazyCell::new(|| attributes.push().list());
