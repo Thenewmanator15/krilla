@@ -362,6 +362,11 @@ optional = [
 [Tag.Terms]
 # A title.
 [Tag.Title]
+# Content that is distinct from the other content of its parent, such as a sidebar,
+# or a figure together with its caption.
+#
+# This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
+[Tag.Aside]
 # Encloses content with strong importance, most commonly **bold** text.
 [Tag.Strong]
 # Encloses content that is emphasized, most commonly *italic* text.

@@ -579,6 +579,8 @@ impl TagKind {
                     struct_elem.kind_2(StructRole2::Title, sc.pdf2_ns.ssn_ref);
                 }
             }
+            // Written as `Div` before PDF 2.0.
+            Self::Aside(_) => write_kind_compat(sc, struct_elem, StructRole2::Aside),
             Self::Hn(tag) => {
                 let role2 = StructRole2::Heading(tag.level());
                 if pdf_version < PdfVersion::Pdf20 {
@@ -652,6 +654,7 @@ impl TagKind {
             Self::Datetime(_) => PdfVersion::Pdf14,
             Self::Terms(_) => PdfVersion::Pdf14,
             Self::Title(_) => PdfVersion::Pdf14,
+            Self::Aside(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
         }
@@ -925,7 +928,7 @@ impl TagGroup {
             };
             match attr {
                 ListAttr::Numbering(numbering) => {
-                    list_attributes.list_numbering(numbering.to_pdf());
+                    list_attributes.list_numbering(numbering.to_pdf(pdf_version));
                 }
             }
         }

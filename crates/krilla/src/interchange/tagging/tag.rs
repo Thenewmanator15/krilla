@@ -3,6 +3,7 @@ use std::num::{NonZeroU16, NonZeroU32};
 
 use smallvec::SmallVec;
 
+use crate::configure::PdfVersion;
 use crate::geom::Rect;
 use crate::surface::Location;
 
@@ -202,6 +203,15 @@ impl TagId {
 pub enum ListNumbering {
     /// No numbering.
     None,
+    /// An unordered list whose bullets are not specified. New in PDF 2.0; written as
+    /// `None` in older versions.
+    Unordered,
+    /// An ordered list whose numbering is not specified. New in PDF 2.0; written as
+    /// `None` in older versions.
+    Ordered,
+    /// A list of terms and their descriptions, with the term as the label. New in
+    /// PDF 2.0; written as `None` in older versions.
+    Description,
     /// Solid circular bullets.
     Disc,
     /// Open circular bullets.
@@ -221,9 +231,16 @@ pub enum ListNumbering {
 }
 
 impl ListNumbering {
-    pub(crate) fn to_pdf(self) -> pdf_writer::types::ListNumbering {
+    pub(crate) fn to_pdf(self, pdf_version: PdfVersion) -> pdf_writer::types::ListNumbering {
+        let pdf20 = pdf_version >= PdfVersion::Pdf20;
         match self {
             ListNumbering::None => pdf_writer::types::ListNumbering::None,
+            ListNumbering::Unordered if pdf20 => pdf_writer::types::ListNumbering::Unordered,
+            ListNumbering::Ordered if pdf20 => pdf_writer::types::ListNumbering::Ordered,
+            ListNumbering::Description if pdf20 => pdf_writer::types::ListNumbering::Description,
+            ListNumbering::Unordered | ListNumbering::Ordered | ListNumbering::Description => {
+                pdf_writer::types::ListNumbering::None
+            }
             ListNumbering::Disc => pdf_writer::types::ListNumbering::Disc,
             ListNumbering::Circle => pdf_writer::types::ListNumbering::Circle,
             ListNumbering::Square => pdf_writer::types::ListNumbering::Square,
