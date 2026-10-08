@@ -766,6 +766,51 @@ fn validate_pdf_ua1_empty_form_field_alt_name() {
         .contains(&ValidationError::MissingFieldAltName(Some(field_loc))));
 }
 
+// PDF/UA-2 requires a mathematical expression to be given as MathML (8.2.5.29). The two
+// formulas have the same MathML, which is written as one associated file.
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_formula_mathml(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let mut formulas = vec![];
+    for y in [50.0, 100.0] {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, y),
+            font.clone(),
+            20.0,
+            "x + 1",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        formulas.push(id);
+    }
+    surface.finish();
+    page.finish();
+
+    let mathml = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">        <mi>x</mi><mo>+</mo><mn>1</mn></math>";
+
+    let mut tag_tree = TagTree::new();
+    for (index, id) in formulas.into_iter().enumerate() {
+        // With MathML, an alternative description is optional.
+        let alt = (index == 0).then(|| "x plus one".to_string());
+        let mut formula = TagGroup::new(Tag::Formula(alt).with_mathml(Some(mathml.to_string())));
+        formula.push(id);
+        let mut paragraph = TagGroup::new(Tag::P);
+        paragraph.push(formula);
+        tag_tree.push(paragraph);
+    }
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("A formula".to_string());
+    document.set_metadata(metadata);
+}
+
 // PDF/UA-2 does not allow content directly below the `Document` element, and krilla does
 // not yet write what it needs for forms, internal links and outline entries, so this
 // example has a title, a paragraph and a link to a URI.

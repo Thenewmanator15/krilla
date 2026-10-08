@@ -355,6 +355,16 @@ impl TagKind {
         self
     }
 
+    /// Presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    pub fn mathml(&self) -> Option<&str> {
+        self.as_any().mathml()
+    }
+
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.as_any().title()
@@ -906,6 +916,16 @@ impl AnyTag {
     pub fn with_refs(mut self, refs: Option<impl IntoIterator<Item = TagId>>) -> Self {
         self.set_refs(refs);
         self
+    }
+
+    /// Presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    pub fn mathml(&self) -> Option<&str> {
+        self.get_struct(StructAttr::MATH_ML).map(StructAttr::unwrap_mathml)
     }
 
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
@@ -4097,6 +4117,37 @@ impl Tag<kind::Formula> {
         tag
     }
 
+    /// Presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    pub fn mathml(&self) -> Option<&str> {
+        self.inner.get_struct(StructAttr::MATH_ML).map(StructAttr::unwrap_mathml)
+    }
+
+    /// Set presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    pub fn set_mathml(&mut self, mathml: Option<String>) {
+        self.inner.set_or_remove_struct(StructAttr::MATH_ML, mathml.map(StructAttr::MathMl));
+    }
+
+    /// Set presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    pub fn with_mathml(mut self, mathml: Option<String>) -> Self {
+        self.set_mathml(mathml);
+        self
+    }
+
     /// The bounding box of a tag that encloses its visible content.
     /// If the content spans multiple pages, this should be omitted.
     pub fn bbox(&self) -> Option<BBox> {
@@ -4305,6 +4356,13 @@ pub(crate) enum StructAttr {
     /// A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
     /// `String` and tags without it stay the size they were.
     Refs(Vec<TagId>),
+    /// Presentation MathML for a mathematical formula, as a complete XML document
+    /// with a `math` root element in the MathML namespace.
+    ///
+    /// Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+    /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+    /// mathematical expressions.
+    MathMl(String),
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     Title(String),
     /// The heading level
@@ -4318,8 +4376,9 @@ impl StructAttr {
     pub(crate) const EXPANDED: usize = 3;
     pub(crate) const ACTUAL_TEXT: usize = 4;
     pub(crate) const REFS: usize = 5;
-    pub(crate) const TITLE: usize = 6;
-    pub(crate) const HEADING_LEVEL: usize = 7;
+    pub(crate) const MATH_ML: usize = 6;
+    pub(crate) const TITLE: usize = 7;
+    pub(crate) const HEADING_LEVEL: usize = 8;
 
         #[inline(always)]
         fn unwrap_id(&self) -> &TagId {
@@ -4370,6 +4429,14 @@ impl StructAttr {
         }
 
         #[inline(always)]
+        fn unwrap_mathml(&self) -> &str {
+            match self {
+                Self::MathMl(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
         fn unwrap_title(&self) -> &str {
             match self {
                 Self::Title(val) => val.as_ref(),
@@ -4395,6 +4462,7 @@ impl Ordinal for StructAttr {
             Self::Expanded(_) => Self::EXPANDED,
             Self::ActualText(_) => Self::ACTUAL_TEXT,
             Self::Refs(_) => Self::REFS,
+            Self::MathMl(_) => Self::MATH_ML,
             Self::Title(_) => Self::TITLE,
             Self::HeadingLevel(_) => Self::HEADING_LEVEL,
         }
@@ -4408,7 +4476,7 @@ pub(crate) enum ListAttr {
 }
 
 impl ListAttr {
-    pub(crate) const NUMBERING: usize = 8;
+    pub(crate) const NUMBERING: usize = 9;
 
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
@@ -4447,11 +4515,11 @@ pub(crate) enum TableAttr {
 }
 
 impl TableAttr {
-    pub(crate) const SUMMARY: usize = 9;
-    pub(crate) const HEADER_SCOPE: usize = 10;
-    pub(crate) const CELL_HEADERS: usize = 11;
-    pub(crate) const ROW_SPAN: usize = 12;
-    pub(crate) const COL_SPAN: usize = 13;
+    pub(crate) const SUMMARY: usize = 10;
+    pub(crate) const HEADER_SCOPE: usize = 11;
+    pub(crate) const CELL_HEADERS: usize = 12;
+    pub(crate) const ROW_SPAN: usize = 13;
+    pub(crate) const COL_SPAN: usize = 14;
 
         #[inline(always)]
         fn unwrap_summary(&self) -> &str {
@@ -4573,36 +4641,36 @@ pub(crate) enum LayoutAttr {
 }
 
 impl LayoutAttr {
-    pub(crate) const PLACEMENT: usize = 14;
-    pub(crate) const WRITING_MODE: usize = 15;
-    pub(crate) const B_BOX: usize = 16;
-    pub(crate) const WIDTH: usize = 17;
-    pub(crate) const HEIGHT: usize = 18;
-    pub(crate) const BACKGROUND_COLOR: usize = 19;
-    pub(crate) const BORDER_COLOR: usize = 20;
-    pub(crate) const BORDER_STYLE: usize = 21;
-    pub(crate) const BORDER_THICKNESS: usize = 22;
-    pub(crate) const PADDING: usize = 23;
-    pub(crate) const COLOR: usize = 24;
-    pub(crate) const SPACE_BEFORE: usize = 25;
-    pub(crate) const SPACE_AFTER: usize = 26;
-    pub(crate) const START_INDENT: usize = 27;
-    pub(crate) const END_INDENT: usize = 28;
-    pub(crate) const TEXT_INDENT: usize = 29;
-    pub(crate) const TEXT_ALIGN: usize = 30;
-    pub(crate) const BLOCK_ALIGN: usize = 31;
-    pub(crate) const INLINE_ALIGN: usize = 32;
-    pub(crate) const TABLE_BORDER_STYLE: usize = 33;
-    pub(crate) const TABLE_PADDING: usize = 34;
-    pub(crate) const BASELINE_SHIFT: usize = 35;
-    pub(crate) const LINE_HEIGHT: usize = 36;
-    pub(crate) const TEXT_DECORATION_COLOR: usize = 37;
-    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 38;
-    pub(crate) const TEXT_DECORATION_TYPE: usize = 39;
-    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 40;
-    pub(crate) const COLUMN_COUNT: usize = 41;
-    pub(crate) const COLUMN_GAP: usize = 42;
-    pub(crate) const COLUMN_WIDTHS: usize = 43;
+    pub(crate) const PLACEMENT: usize = 15;
+    pub(crate) const WRITING_MODE: usize = 16;
+    pub(crate) const B_BOX: usize = 17;
+    pub(crate) const WIDTH: usize = 18;
+    pub(crate) const HEIGHT: usize = 19;
+    pub(crate) const BACKGROUND_COLOR: usize = 20;
+    pub(crate) const BORDER_COLOR: usize = 21;
+    pub(crate) const BORDER_STYLE: usize = 22;
+    pub(crate) const BORDER_THICKNESS: usize = 23;
+    pub(crate) const PADDING: usize = 24;
+    pub(crate) const COLOR: usize = 25;
+    pub(crate) const SPACE_BEFORE: usize = 26;
+    pub(crate) const SPACE_AFTER: usize = 27;
+    pub(crate) const START_INDENT: usize = 28;
+    pub(crate) const END_INDENT: usize = 29;
+    pub(crate) const TEXT_INDENT: usize = 30;
+    pub(crate) const TEXT_ALIGN: usize = 31;
+    pub(crate) const BLOCK_ALIGN: usize = 32;
+    pub(crate) const INLINE_ALIGN: usize = 33;
+    pub(crate) const TABLE_BORDER_STYLE: usize = 34;
+    pub(crate) const TABLE_PADDING: usize = 35;
+    pub(crate) const BASELINE_SHIFT: usize = 36;
+    pub(crate) const LINE_HEIGHT: usize = 37;
+    pub(crate) const TEXT_DECORATION_COLOR: usize = 38;
+    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 39;
+    pub(crate) const TEXT_DECORATION_TYPE: usize = 40;
+    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 41;
+    pub(crate) const COLUMN_COUNT: usize = 42;
+    pub(crate) const COLUMN_GAP: usize = 43;
+    pub(crate) const COLUMN_WIDTHS: usize = 44;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {

@@ -190,6 +190,7 @@ impl Output for Attr {
                 Expanded(e) => writeln!(f, "/E: {e:?}"),
                 ActualText(actual) => writeln!(f, "/ActualText: {actual:?}"),
                 Title(title) => writeln!(f, "/T: {title:?}"),
+                MathMl(mathml) => writeln!(f, "/AF: {mathml:?}"),
                 Refs(refs) => {
                     write!(f, "/Ref: [")?;
                     if let Some((first, remainder)) = refs.split_first() {
