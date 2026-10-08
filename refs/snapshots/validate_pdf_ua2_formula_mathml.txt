@@ -1,0 +1,368 @@
+%PDF-2.0
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [15 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /StructTreeRoot
+  /Namespaces [3 0 R 4 0 R]
+  /K [10 0 R]
+  /ParentTree <<
+    /Nums [0 5 0 R]
+  >>
+  /ParentTreeNextKey 1
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Namespace
+  /NS (http://iso.org/pdf2/ssn)
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Namespace
+  /NS (https://github.com/LaurenzV/krilla)
+  /RoleMapNS <<
+    /Datetime [/Span 3 0 R]
+    /Terms [/Part 3 0 R]
+  >>
+>>
+endobj
+
+5 0 obj
+[6 0 R 8 0 R]
+endobj
+
+6 0 obj
+<<
+  /Type /StructElem
+  /S /Formula
+  /NS 3 0 R
+  /P 7 0 R
+  /Alt (x plus one)
+  /AF [16 0 R]
+  /K [0]
+  /Pg 15 0 R
+>>
+endobj
+
+7 0 obj
+<<
+  /Type /StructElem
+  /S /P
+  /NS 3 0 R
+  /P 10 0 R
+  /K [6 0 R]
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /StructElem
+  /S /Formula
+  /NS 3 0 R
+  /P 9 0 R
+  /AF [16 0 R]
+  /K [1]
+  /Pg 15 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /StructElem
+  /S /P
+  /NS 3 0 R
+  /P 10 0 R
+  /K [8 0 R]
+>>
+endobj
+
+10 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /NS 3 0 R
+  /P 2 0 R
+  /K [7 0 R 9 0 R]
+>>
+endobj
+
+11 0 obj
+<<
+  /Font <<
+    /f0 12 0 R
+  >>
+>>
+endobj
+
+12 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /JSUESL+NotoSans-Regular
+  /Encoding /Identity-H
+  /DescendantFonts [13 0 R]
+  /ToUnicode 17 0 R
+>>
+endobj
+
+13 0 obj
+<<
+  /Type /Font
+  /Subtype /CIDFontType2
+  /BaseFont /JSUESL+NotoSans-Regular
+  /CIDSystemInfo <<
+    /Registry (Adobe)
+    /Ordering (Identity)
+    /Supplement 0
+  >>
+  /FontDescriptor 14 0 R
+  /DW 0
+  /CIDToGIDMap /Identity
+  /W [0 0 600 1 1 529 2 2 260 3 4 572]
+>>
+endobj
+
+14 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /JSUESL+NotoSans-Regular
+  /Flags 131076
+  /FontBBox [18 0 520 714]
+  /ItalicAngle 0
+  /Ascent 1069
+  /Descent -293
+  /CapHeight 714
+  /StemV 95.4
+  /FontFile2 18 0 R
+>>
+endobj
+
+15 0 obj
+<<
+  /Type /Page
+  /Resources 11 0 R
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Tabs /S
+  /Parent 1 0 R
+  /Contents 19 0 R
+>>
+endobj
+
+16 0 obj
+<<
+  /Type /Filespec
+  /F (formula-1.mml)
+  /UF (formula-1.mml)
+  /EF <<
+    /F 20 0 R
+    /UF 20 0 R
+  >>
+  /AFRelationship /Supplement
+  /Desc (MathML for a formula)
+>>
+endobj
+
+17 0 obj
+<<
+  /Length 661
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+4 beginbfchar
+<0001> <0078>
+<0002> <0020>
+<0003> <002B>
+<0004> <0031>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+18 0 obj
+<<
+  /Length 1789
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C8D544D48545114FEEE9B3FCDC91CB312693136855139FE8C3342496045264C4929
+D10F18AF99D78C34336F709E9611D4A2A0A2361511D42A681B4210B909A24850B016E1
+269096B511215A6838F6DD3BCFBFC9C077E7BEFB7DE79EEFDC73CFBD6F200094E2261C
+A848A4862EBDDCD6F88996E7EC6F92861E0FFCEC9902440F79244983F7B5EB3AF97DF2
+9DC9B475B544C30BF261F2CA9419D3614AADF848EE4DEB57B3D82D6E907F21F767F4B4
+A15FBF3B4B3E033883593367C18B4EC0EDE7FCBE6CBF914DBAEFDF268F927BA0A197BE
+B3DA18B3F300215FAD6F57ADAFB6573CCB3F15E1FCB836361F0969710854D26F41AB46
+19B0D911DAD61A726C0ED479025F47E2F7EEC6463EC41F3E8E894AE11E1BCBCFE5A727
+27A96886A99568DD5221425B025B02E14038140E89F6D1D163FC895B1D13131D9F3989
+B37CC5988317A80DF85A22AD6EB7C753D71A12B1D39A565153150DBEEF14BFF6B66CAF
+D8EA3B78E009A406D0C4F8D3C6FE731736B5FD86C3F183164CD57922F6D83EFF283FB8
+61C67598D4CD7D161EEA9CF5F96F4059F5FCA33FB736CCA8482B1FA77606BD9A0F95C2
+C925DAB88BB3CA5E857AB64338AF142ECE5663889157EB9D8A97E315EB299CA5C449F6
+0296354CDA58A3CF351B3B10C11D1B3BB103EF6CEC420DBEDBD80D3FE66CECC1115163
+E312EC11BD362EE54D588C538683BC3105EC459B98B6F146B143DB63E372B438A238CC
+FB94E54EFAD18704F3B3B852331AD18430F72B5133B11F1DF433E99182411685540689
+DA6949713CB5A4CF29667034187590EF383D4F506DB1FBD10D1D19CE4A9F0406A8D6E9
+D74C9F46B6561CE05A5D6C1D448BAA454D7D91EADFA8FE228FD32A8B1CB33339EF5FB1
+CEFA63F7A9B83ABB45BBCEFD18482B9FCBB499B8F4DFFA1C57ABCA3843ACB29CE954CA
+046366F8963C83D89A9E47540D655565DE3D643AB5B2C2163DF6A381ED8A6A41FA2CAF
+1E643C939E0DE4067D1BECB826D1DAEA74D1DACB1172B40D70BFB27A3D54172A7154F9
+5BAAEA72F716A3C86A184BB54A718C9167D42D88D332401C576721AB9854BEDDDC7D94
+63975A35B32A727455847DB4149F6413F36C52777039B3D5EB2E9FDC207B9F3AD78BF6
+095D21977914CEF528EFF149852DD6C6BF54A79C5DA91CA3CA2F24ABEE77506591E268
+D29AE07C1723448BAABB3E0D16FF9B169EF36EAEF5B8D8CFF39B2D47D55BB1707BD8F9
+007F01999A13DE
+endstream
+endobj
+
+19 0 obj
+<<
+  /Length 284
+>>
+stream
+/Span <<
+  /MCID 0
+>> BDC
+q
+1 0 0 -1 0 842 cm
+0 g
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 50 Tm
+[(\000\001\000\002\000\003\000\002\000\004)] TJ
+ET
+Q
+EMC
+/Span <<
+  /MCID 1
+>> BDC
+q
+1 0 0 -1 0 842 cm
+0 g
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 100 Tm
+[(\000\001\000\002\000\003\000\002\000\004)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
+20 0 obj
+<<
+  /Length 94
+  /Type /EmbeddedFile
+  /Subtype /application#2Fmathml+xml
+  /Params <<
+    /Size 94
+  >>
+>>
+stream
+<math xmlns="http://www.w3.org/1998/Math/MathML">        <mi>x</mi><mo>+</mo><mn>1</mn></math>
+endstream
+endobj
+
+22 0 obj
+<<
+  /Length 989
+  /Type /Metadata
+  /Subtype /XML
+>>
+stream
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">A formula</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>2</pdfuaid:part><pdfuaid:rev>2024</pdfuaid:rev><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>Vef+nQ5bgs721xeO2qDESA==</xmpMM:InstanceID><xmpMM:DocumentID>Vef+nQ5bgs721xeO2qDESA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>2.0</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+endstream
+endobj
+
+23 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Metadata 22 0 R
+  /Lang (en)
+  /StructTreeRoot 2 0 R
+  /MarkInfo <<
+    /Marked true
+  >>
+  /ViewerPreferences <<
+    /DisplayDocTitle true
+  >>
+>>
+endobj
+
+xref
+0 24
+0000000021 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000234 00000 n
+0000000307 00000 n
+0000000465 00000 n
+0000000495 00000 n
+0000000631 00000 n
+0000000718 00000 n
+0000000834 00000 n
+0000000921 00000 n
+0000001021 00000 n
+0000001075 00000 n
+0000001239 00000 n
+0000001525 00000 n
+0000001751 00000 n
+0000001899 00000 n
+0000002087 00000 n
+0000002828 00000 n
+0000004714 00000 n
+0000005053 00000 n
+0000000000 00000 f
+0000005291 00000 n
+0000006369 00000 n
+trailer
+<<
+  /Size 24
+  /Root 23 0 R
+  /ID [(Vef+nQ5bgs721xeO2qDESA==) (Vef+nQ5bgs721xeO2qDESA==)]
+>>
+startxref
+6572
+%%EOF

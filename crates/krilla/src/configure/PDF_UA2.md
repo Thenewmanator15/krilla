@@ -34,6 +34,12 @@ See `README.md` for the meaning of each color.
   (ISO 32000-2, table 202). A named destination that leads to a tag is a dictionary with
   the page destination as `D` and the structure destination as `SD` (ISO 32000-2,
   12.3.2.4). It checks that the tag exists (clause 8.8). 🟢
+- krilla writes the `mathml` attribute of a `Formula` as a file associated with the tag,
+  with the relationship `Supplement` (clause 8.2.5.29.1; ISO 32000-2, 14.13). Equal MathML
+  is written once. An associated file is an embedded file, so PDF/A-4 does not allow it and
+  PDF/A-4f is needed for a document that has to be both. 🟢
+- krilla does not require an alternative description on a `Formula` that has MathML.
+  Clause 8.2.5.29.2 asks for one only on a formula that is not mathematical. 🟢
 - krilla rejects link annotations, go-to actions and outline entries whose destination does
   not lead to a tag (clause 8.8). 🟢
 - krilla applies the checks it applies for PDF/UA-1 (see `PDF_UA1.md`): codepoint mappings,
@@ -45,9 +51,10 @@ See `README.md` for the meaning of each color.
 
 - A named destination that is registered with the document but never linked to is not
   checked. 🟠
-- Mathematical expressions have to be given as MathML, as structure elements or as an
-  associated file on the `Formula` (clause 8.2.5.29.1). krilla can do neither, so a document
-  with a mathematical `Formula` does not conform. veraPDF does not check this. 🔴
+- krilla does not require MathML on a `Formula`, because it cannot tell a mathematical
+  expression from another kind of formula, which does not need it (clause 8.2.5.29.2).
+  veraPDF does not check this either, so it is up to the user. 🟣
+- krilla cannot write MathML as structure elements, only as an associated file. 🔴
 - A link to a target in the same document should be a `Reference` rather than a `Link`
   (clause 8.2.5.20). This is up to the user. 🟣
 - Leaders in a table of contents have to be artifacts (clause 8.2.5.8). This is up to the

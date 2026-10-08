@@ -852,7 +852,14 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
 
-        if self.tag.should_have_alt() && tag.alt_text().is_none_or(str::is_empty) {
+        // In PDF 2.0, MathML describes a formula, and PDF/UA-2 only asks for an
+        // alternative description on a formula that is not mathematical (8.2.5.29.2).
+        let described_by_mathml = pdf_version >= PdfVersion::Pdf20
+            && tag.mathml().is_some_and(|mathml| !mathml.is_empty());
+        if self.tag.should_have_alt()
+            && tag.alt_text().is_none_or(str::is_empty)
+            && !described_by_mathml
+        {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
@@ -872,6 +879,13 @@ impl TagGroup {
                         .filter_map(|id| ids.ref_targets.get(id).copied());
                     if pdf_version >= PdfVersion::Pdf20 && refs.clone().next().is_some() {
                         struct_elem.refs(refs);
+                    }
+                }
+                StructAttr::MathMl(mathml) => {
+                    // Associated files of a structure element are new in PDF 2.0.
+                    if pdf_version >= PdfVersion::Pdf20 {
+                        let file = sc.register_mathml(mathml, tag.location);
+                        struct_elem.insert(Name(b"AF")).array().item(file);
                     }
                 }
                 StructAttr::Title(title) => {

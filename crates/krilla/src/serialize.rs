@@ -22,7 +22,7 @@ use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 use crate::graphics::image::Image;
 use crate::graphics::separation::SeparationColorSpace;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
-use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::embed::{EmbedError, EmbeddedFile};
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagId, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
@@ -30,6 +30,7 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
+use crate::stream::FilterStreamBuilder;
 use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier};
@@ -260,6 +261,9 @@ pub(crate) struct SerializeContext {
     /// The references of the tags that structure destinations lead to. They are
     /// allocated before the tag tree is written, so that the destinations can use them.
     structure_destination_targets: BTreeMap<TagId, Ref>,
+    /// The file specifications of the MathML attached to formula tags. Equal
+    /// MathML is written once.
+    mathml_files: BTreeMap<String, Ref>,
     /// Information for each page written so far, index by the page index.
     page_infos: Vec<PageInfo>,
     /// Keep track of object hashes and their corresponding reference. This is used for
@@ -314,6 +318,7 @@ impl SerializeContext {
             cur_ref,
             page_tree_ref,
             structure_destination_targets: BTreeMap::new(),
+            mathml_files: BTreeMap::new(),
             page_infos: vec![],
             location: None,
             validation_errors: vec![],
@@ -482,6 +487,7 @@ impl SerializeContext {
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
         self.serialize_tag_tree(&mut chunk_container)?;
+        self.serialize_mathml_files(&mut chunk_container);
 
         // Create the final PDF.
         let pdf = chunk_container.finish(&mut self)?;
@@ -905,6 +911,61 @@ impl SerializeContext {
         }
 
         Ok(())
+    }
+
+    /// The file specification for MathML that a formula tag refers to in its `AF`.
+    pub(crate) fn register_mathml(&mut self, mathml: &str, location: Option<Location>) -> Ref {
+        if let Some(file) = self.mathml_files.get(mathml) {
+            return *file;
+        }
+
+        // An associated file is an embedded file, which not every standard allows.
+        self.register_validation_error(ValidationError::EmbeddedFile(
+            EmbedError::Existence,
+            location,
+        ));
+        let file = self.new_ref();
+        self.mathml_files.insert(mathml.to_string(), file);
+        file
+    }
+
+    /// ISO 32000-2, 14.13: each is an embedded file stream and a file specification
+    /// with the relationship `Supplement`. They are associated with their tags only,
+    /// so they are not in the name tree of embedded files.
+    fn serialize_mathml_files(&mut self, chunk_container: &mut ChunkContainer) {
+        let mut files = std::mem::take(&mut self.mathml_files)
+            .into_iter()
+            .collect::<Vec<_>>();
+        // In the order they were registered, so that the numbering follows the tags.
+        files.sort_by_key(|(_, file)| file.get());
+
+        for (index, (mathml, file_ref)) in files.into_iter().enumerate() {
+            let stream_ref = self.new_ref();
+            let mut stream_chunk = self.new_chunk();
+            let stream = FilterStreamBuilder::new_auto_compressed(mathml.as_bytes())
+                .finish(&self.serialize_settings());
+            let mut embedded = stream_chunk.embedded_file(stream_ref, stream.encoded_data());
+            stream.write_filters(embedded.deref_mut().deref_mut());
+            embedded.subtype(Name(b"application/mathml+xml"));
+            embedded.params().size(mathml.len() as i32);
+            embedded.finish();
+            chunk_container.streams.embedded_files.push(stream_chunk);
+
+            let name = format!("formula-{}.mml", index + 1);
+            let mut file_spec = chunk_container
+                .non_stream
+                .embedded_files
+                .file_spec(file_ref);
+            file_spec.path(Str(name.as_bytes()));
+            file_spec.unic_file(TextStr(&name));
+            let mut ef = file_spec.insert(Name(b"EF")).dict();
+            ef.pair(Name(b"F"), stream_ref);
+            ef.pair(Name(b"UF"), stream_ref);
+            ef.finish();
+            file_spec.association_kind(pdf_writer::types::AssociationKind::Supplement);
+            file_spec.description(TextStr("MathML for a formula"));
+            file_spec.finish();
+        }
     }
 
     fn serialize_tag_tree(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {

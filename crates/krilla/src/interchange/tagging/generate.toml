@@ -343,6 +343,7 @@ optional = [
 [Tag.Formula]
 suggested = ["Struct::AltText"]
 optional = [
+  "Struct::MathMl",
   "Layout::BBox",
   "Layout::Width",
   "Layout::Height",
@@ -390,6 +391,13 @@ ActualText = { type = "String", global = true, accessor = "AsRef<str>" }
 # A `Vec` rather than a `SmallVec`, so that this attribute is no larger than a
 # `String` and tags without it stay the size they were.
 Refs = { type = "Vec<TagId>", global = true, accessor = "Custom" }
+# Presentation MathML for a mathematical formula, as a complete XML document
+# with a `math` root element in the MathML namespace.
+#
+# Only written for PDF 2.0, as a file associated with the tag (`AF`) with the
+# relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
+# mathematical expressions.
+MathMl = { name = "mathml", type = "String", accessor = "AsRef<str>" }
 # The title, characterizing a specific tag such as `"Chapter 1"`.
 Title = { type = "String", accessor = "AsRef<str>" }
 
