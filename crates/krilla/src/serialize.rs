@@ -642,6 +642,13 @@ impl SerializeContext {
     }
 
     pub(crate) fn register_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
+        // Before PDF 2.0 the tag is not written, so two destinations that only differ in
+        // their tag are one and the same.
+        let dest = if self.serialize_settings.pdf_version() < PdfVersion::Pdf20 {
+            dest.without_tag()
+        } else {
+            dest
+        };
         self.register_cached(dest, |sc, dest, root_ref| {
             sc.global_objects.xyz_destinations.push((root_ref, dest));
         })
