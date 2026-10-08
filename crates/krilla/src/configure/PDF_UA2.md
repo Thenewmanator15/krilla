@@ -38,6 +38,9 @@ See `README.md` for the meaning of each color.
   with the relationship `Supplement` (clause 8.2.5.29.1; ISO 32000-2, 14.13). Equal MathML
   is written once. An associated file is an embedded file, so PDF/A-4 does not allow it and
   PDF/A-4f is needed for a document that has to be both. 🟢
+- krilla writes the `note_type` attribute of a `Note` as the `NoteType` of the `FENote`
+  (clause 8.2.5.14.2), and the `aria_role` attribute of any tag as the `role` of the
+  `ARIA-1.1` attribute owner (clause 8.2.6.4). 🟢
 - krilla does not require an alternative description on a `Formula` that has MathML.
   Clause 8.2.5.29.2 asks for one only on a formula that is not mathematical. 🟢
 - krilla rejects link annotations, go-to actions and outline entries whose destination does
@@ -59,8 +62,8 @@ See `README.md` for the meaning of each color.
   (clause 8.2.5.20). This is up to the user. 🟣
 - Leaders in a table of contents have to be artifacts (clause 8.2.5.8). This is up to the
   user. 🟣
-- krilla does not write the `NoteType` attribute of `FENote`, which then has its default
-  value `None`. 🔴
+- The section that holds a bibliography needs the role `doc-bibliography` (clause
+  8.2.5.31), which the `aria_role` attribute writes. Using it is up to the user. 🟣
 - A list whose items have `Lbl` elements needs a `ListNumbering` other than `None` (clause
   8.2.5.25). This is up to the user and not checked. The PDF 2.0 values `Ordered`,
   `Unordered` and `Description` are there for lists that none of the others fit, such as

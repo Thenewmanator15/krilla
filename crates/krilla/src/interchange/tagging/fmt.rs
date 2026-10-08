@@ -192,6 +192,8 @@ impl Output for Attr {
                 ActualText(actual) => writeln!(f, "/ActualText: {actual:?}"),
                 Title(title) => writeln!(f, "/T: {title:?}"),
                 MathMl(mathml) => writeln!(f, "/AF: {mathml:?}"),
+                NoteType(note_type) => writeln!(f, "/NoteType: {note_type:?}"),
+                AriaRole(role) => writeln!(f, "/role: {role:?}"),
                 Refs(refs) => {
                     write!(f, "/Ref: [")?;
                     if let Some((first, remainder)) = refs.split_first() {

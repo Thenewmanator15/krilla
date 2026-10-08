@@ -237,6 +237,7 @@ optional = [
 # **Best practice**: It may have a label as a child.
 [Tag.Note]
 optional = [
+  "Struct::NoteType",
   "Layout::SpaceBefore",
   "Layout::SpaceAfter",
   "Layout::StartIndent",
@@ -403,6 +404,16 @@ Refs = { type = "Vec<TagId>", global = true, accessor = "Custom" }
 # relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
 # mathematical expressions.
 MathMl = { name = "mathml", type = "String", accessor = "AsRef<str>" }
+# Whether a note is a footnote or an endnote.
+#
+# Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
+NoteType = { type = "NoteType", accessor = "Copy" }
+# A WAI-ARIA or DPUB-ARIA role that says more about what a tag is, such as
+# `doc-bibliography` on the section that holds a bibliography. It must not
+# contradict the tag.
+#
+# Only written for PDF 2.0, as the `role` attribute of the `ARIA-1.1` owner.
+AriaRole = { type = "String", global = true, accessor = "AsRef<str>" }
 # The title, characterizing a specific tag such as `"Chapter 1"`.
 Title = { type = "String", accessor = "AsRef<str>" }
 

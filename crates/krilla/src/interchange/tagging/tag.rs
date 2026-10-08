@@ -198,6 +198,27 @@ impl TagId {
     }
 }
 
+/// What kind of note an `FENote` is.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum NoteType {
+    /// A footnote.
+    Footnote,
+    /// An endnote.
+    Endnote,
+    /// The kind is not specified. This is what a note without the attribute is.
+    None,
+}
+
+impl NoteType {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::NoteType {
+        match self {
+            NoteType::Footnote => pdf_writer::types::NoteType::Footnote,
+            NoteType::Endnote => pdf_writer::types::NoteType::Endnote,
+            NoteType::None => pdf_writer::types::NoteType::None,
+        }
+    }
+}
+
 /// The list numbering type.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ListNumbering {
