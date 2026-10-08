@@ -128,6 +128,11 @@ pub enum TagKind {
     Terms(Tag<kind::Terms>),
     /// A title.
     Title(Tag<kind::Title>),
+    /// Content that is distinct from the other content of its parent, such as a sidebar,
+    /// or a figure together with its caption.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
+    Aside(Tag<kind::Aside>),
     /// Encloses content with strong importance, most commonly **bold** text.
     Strong(Tag<kind::Strong>),
     /// Encloses content that is emphasized, most commonly *italic* text.
@@ -175,6 +180,7 @@ impl TagKind {
             Self::Datetime(tag) => tag.as_any(),
             Self::Terms(tag) => tag.as_any(),
             Self::Title(tag) => tag.as_any(),
+            Self::Aside(tag) => tag.as_any(),
             Self::Strong(tag) => tag.as_any(),
             Self::Em(tag) => tag.as_any(),
         }
@@ -221,6 +227,7 @@ impl TagKind {
             Self::Datetime(tag) => tag.as_any_mut(),
             Self::Terms(tag) => tag.as_any_mut(),
             Self::Title(tag) => tag.as_any_mut(),
+            Self::Aside(tag) => tag.as_any_mut(),
             Self::Strong(tag) => tag.as_any_mut(),
             Self::Em(tag) => tag.as_any_mut(),
         }
@@ -1833,6 +1840,13 @@ pub mod kind {
     /// A title.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Title;
+
+    /// Content that is distinct from the other content of its parent, such as a sidebar,
+    /// or a figure together with its caption.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Aside;
 
     /// Encloses content with strong importance, most commonly **bold** text.
     #[derive(Clone, Debug, PartialEq)]
@@ -4254,6 +4268,20 @@ impl Tag<kind::Title> {
     /// A title.
     #[allow(non_upper_case_globals)]
     pub const Title: Tag<kind::Title> = Tag::new();
+}
+
+impl From<Tag<kind::Aside>> for TagKind {
+    fn from(value: Tag<kind::Aside>) -> Self {
+        Self::Aside(value)
+    }
+}
+impl Tag<kind::Aside> {
+    /// Content that is distinct from the other content of its parent, such as a sidebar,
+    /// or a figure together with its caption.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
+    #[allow(non_upper_case_globals)]
+    pub const Aside: Tag<kind::Aside> = Tag::new();
 }
 
 impl From<Tag<kind::Strong>> for TagKind {

@@ -156,6 +156,7 @@ impl Output for TagKind {
             TagKind::Datetime(_) => write!(f, "Datetime"),
             TagKind::Terms(_) => write!(f, "Terms"),
             TagKind::Title(_) => write!(f, "Title"),
+            TagKind::Aside(_) => write!(f, "Aside"),
             TagKind::Strong(_) => write!(f, "Strong"),
             TagKind::Em(_) => write!(f, "Em"),
         }?;
@@ -349,6 +350,9 @@ impl Output for ListNumbering {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
             ListNumbering::None => write!(f, "None"),
+            ListNumbering::Unordered => write!(f, "Unordered"),
+            ListNumbering::Ordered => write!(f, "Ordered"),
+            ListNumbering::Description => write!(f, "Description"),
             ListNumbering::Disc => write!(f, "Disc"),
             ListNumbering::Circle => write!(f, "Circle"),
             ListNumbering::Square => write!(f, "Square"),

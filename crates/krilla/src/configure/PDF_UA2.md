@@ -62,8 +62,12 @@ See `README.md` for the meaning of each color.
 - krilla does not write the `NoteType` attribute of `FENote`, which then has its default
   value `None`. 🔴
 - A list whose items have `Lbl` elements needs a `ListNumbering` other than `None` (clause
-  8.2.5.25). This is up to the user and not checked. krilla does not have the PDF 2.0
-  values `Ordered`, `Unordered` and `Description`. 🟣
+  8.2.5.25). This is up to the user and not checked. The PDF 2.0 values `Ordered`,
+  `Unordered` and `Description` are there for lists that none of the others fit, such as
+  a list of terms. 🟣
+- A caption has to be a child of the element that encloses what it captions (clause
+  8.2.5.27). This is up to the user. The PDF 2.0 `Aside` tag can enclose a figure and its
+  caption where no other element does. 🟣
 - The `Document` element must not contain content items directly (ISO 32005, table 5). This
   is up to the user and not checked. 🟣
 

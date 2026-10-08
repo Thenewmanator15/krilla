@@ -766,6 +766,69 @@ fn validate_pdf_ua1_empty_form_field_alt_name() {
         .contains(&ValidationError::MissingFieldAltName(Some(field_loc))));
 }
 
+// A figure and its caption in an `Aside`, so that the caption is a child of the element
+// that encloses what it captions (8.2.5.27), and a list of terms, which needs a
+// `ListNumbering` other than `None` because its terms are labels (8.2.5.25).
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_aside_and_description_list(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let mut ids = vec![];
+    for (index, text) in ["A caption", "A figure", "Term", "Description"]
+        .into_iter()
+        .enumerate()
+    {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(0.0, 50.0 * (index + 1) as f32),
+            font.clone(),
+            20.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        ids.push(id);
+    }
+    surface.finish();
+    page.finish();
+    let [caption_id, figure_id, term_id, description_id] = ids.try_into().unwrap();
+
+    let mut caption = TagGroup::new(Tag::Caption);
+    let mut caption_text = TagGroup::new(Tag::P);
+    caption_text.push(caption_id);
+    caption.push(caption_text);
+    let mut figure = TagGroup::new(Tag::Figure(Some("A figure".to_string())));
+    figure.push(figure_id);
+    let mut aside = TagGroup::new(Tag::Aside);
+    aside.push(caption);
+    aside.push(figure);
+
+    let mut label = TagGroup::new(Tag::Lbl);
+    label.push(term_id);
+    let mut body_text = TagGroup::new(Tag::P);
+    body_text.push(description_id);
+    let mut body = TagGroup::new(Tag::LBody);
+    body.push(body_text);
+    let mut item = TagGroup::new(Tag::LI);
+    item.push(label);
+    item.push(body);
+    let mut list = TagGroup::new(Tag::L(ListNumbering::Description));
+    list.push(item);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(aside);
+    tag_tree.push(list);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("An aside and a list of terms".to_string());
+    document.set_metadata(metadata);
+}
+
 // PDF/UA-2 requires a mathematical expression to be given as MathML (8.2.5.29). The two
 // formulas have the same MathML, which is written as one associated file.
 #[snapshot(document, settings_34)]

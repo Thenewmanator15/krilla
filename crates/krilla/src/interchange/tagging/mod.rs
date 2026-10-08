@@ -573,6 +573,7 @@ impl TagKind {
             Self::Terms(_) => write_kind_custom(sc, struct_elem, Name(b"Terms")),
             // PDF 2.0 structure roles that are conditionally registered.
             Self::Title(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Title),
+            Self::Aside(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Aside),
             Self::Strong(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Strong),
             Self::Em(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Em),
             Self::Hn(tag) => {
@@ -634,6 +635,7 @@ impl TagKind {
             Self::Datetime(_) => PdfVersion::Pdf14,
             Self::Terms(_) => PdfVersion::Pdf14,
             Self::Title(_) => PdfVersion::Pdf14,
+            Self::Aside(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
         }
@@ -922,7 +924,7 @@ impl TagGroup {
             };
             match attr {
                 ListAttr::Numbering(numbering) => {
-                    list_attributes.list_numbering(numbering.to_pdf());
+                    list_attributes.list_numbering(numbering.to_pdf(pdf_version));
                 }
             }
         }
