@@ -484,6 +484,7 @@ impl SerializeContext {
         self.serialize_embedded_pdfs(&mut chunk_container)?;
         self.allocate_structure_destination_targets();
         self.serialize_xyz_destinations(&mut chunk_container)?;
+        self.serialize_named_structure_destinations(&mut chunk_container);
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
@@ -572,16 +573,22 @@ impl SerializeContext {
     }
 
     pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) -> Option<Ref> {
-        if let Some((dest_ref, existing)) =
+        if let Some((dest_ref, existing, _)) =
             self.global_objects.named_destinations.get(nd.name.as_ref())
         {
             return (existing == nd.xyz_dest.as_ref()).then_some(*dest_ref);
         }
 
         let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
-        self.global_objects
-            .named_destinations
-            .insert(nd.name.clone(), (dest_ref, (*nd.xyz_dest).clone()));
+        // A named structure destination is a dictionary with the page destination as `D`
+        // and the structure destination as `SD`, so the page destination is needed too.
+        let page_ref = (nd.xyz_dest.tag().is_some()
+            && self.serialize_settings.pdf_version() >= PdfVersion::Pdf20)
+            .then(|| self.register_xyz_destination(nd.xyz_dest.without_tag()));
+        self.global_objects.named_destinations.insert(
+            nd.name.clone(),
+            (dest_ref, (*nd.xyz_dest).clone(), page_ref),
+        );
         Some(dest_ref)
     }
 
@@ -886,6 +893,38 @@ impl SerializeContext {
         }
     }
 
+    /// ISO 32000-2, 12.3.2.4: a name maps to a destination array, or to a dictionary whose
+    /// `D` is such an array and which may have an `SD` with a structure destination. The
+    /// second form is written for a named destination that leads to a tag.
+    fn serialize_named_structure_destinations(&mut self, chunk_container: &mut ChunkContainer) {
+        let mut named = self
+            .global_objects
+            .named_destinations
+            .iter()
+            .filter_map(|(name, (dest_ref, dest, page_ref))| {
+                self.structure_destination_target(dest.tag()?)?;
+                Some((name.clone(), *dest_ref, (*page_ref)?))
+            })
+            .collect::<Vec<_>>();
+        // The map has no order of its own, and the references are numbered in this order.
+        named.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+
+        for (name, structure_ref, page_ref) in named {
+            let dict_ref = self.new_ref();
+            let mut dict = chunk_container
+                .non_stream
+                .destinations
+                .indirect(dict_ref)
+                .dict();
+            dict.pair(Name(b"D"), page_ref);
+            dict.pair(Name(b"SD"), structure_ref);
+            dict.finish();
+            if let Some(entry) = self.global_objects.named_destinations.get_mut(&name) {
+                entry.0 = dict_ref;
+            }
+        }
+    }
+
     fn serialize_xyz_destinations(
         &mut self,
         chunk_container: &mut ChunkContainer,
@@ -1147,7 +1186,10 @@ pub(crate) struct GlobalObjects {
     /// All named destinations that have been registered, including a Ref to their destination and
     /// the destination itself.
     // Needs to be pub(crate) because writing of named destinations happens in `ChunkContainer`.
-    pub(crate) named_destinations: MaybeTaken<HashMap<Arc<String>, (Ref, XyzDestination)>>,
+    /// For each name the reference its entry in the name tree points to, the
+    /// destination, and for a structure destination the reference of its page destination.
+    pub(crate) named_destinations:
+        MaybeTaken<HashMap<Arc<String>, (Ref, XyzDestination, Option<Ref>)>>,
     /// A map from fonts to font container.
     font_map: MaybeTaken<IndexMap<Font, Rc<RefCell<FontContainer>>>>,
     /// All XYZ destinations used in the document. The reason we need to store them

@@ -5,69 +5,72 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [17 0 R]
+  /Kids [16 0 R]
 >>
 endobj
 
 2 0 obj
 <<
-  /Type /Outlines
->>
-endobj
-
-3 0 obj
-<<
   /Type /StructTreeRoot
-  /Namespaces [4 0 R 5 0 R]
-  /K [12 0 R]
+  /Namespaces [3 0 R 4 0 R]
+  /K [11 0 R]
   /ParentTree <<
-    /Nums [0 6 0 R]
+    /Nums [0 5 0 R]
   >>
   /IDTree <<
-    /Names [(Uheading) 10 0 R]
+    /Names [(Uheading) 9 0 R]
   >>
   /ParentTreeNextKey 1
 >>
 endobj
 
-4 0 obj
+3 0 obj
 <<
   /Type /Namespace
   /NS (http://iso.org/pdf2/ssn)
 >>
 endobj
 
-5 0 obj
+4 0 obj
 <<
   /Type /Namespace
   /NS (https://github.com/LaurenzV/krilla)
   /RoleMapNS <<
-    /Datetime [/Span 4 0 R]
-    /Terms [/Part 4 0 R]
+    /Datetime [/Span 3 0 R]
+    /Terms [/Part 3 0 R]
   >>
 >>
 endobj
 
+5 0 obj
+[6 0 R 9 0 R 10 0 R]
+endobj
+
 6 0 obj
-[7 0 R 10 0 R 11 0 R]
+<<
+  /Type /StructElem
+  /S /Reference
+  /P 7 0 R
+  /K [0]
+  /Pg 16 0 R
+>>
 endobj
 
 7 0 obj
 <<
   /Type /StructElem
-  /S /Reference
+  /S /TOCI
   /P 8 0 R
-  /K [0]
-  /Pg 17 0 R
+  /Ref [9 0 R]
+  /K [6 0 R]
 >>
 endobj
 
 8 0 obj
 <<
   /Type /StructElem
-  /S /TOCI
-  /P 9 0 R
-  /Ref [10 0 R]
+  /S /TOC
+  /P 11 0 R
   /K [7 0 R]
 >>
 endobj
@@ -75,66 +78,57 @@ endobj
 9 0 obj
 <<
   /Type /StructElem
-  /S /TOC
-  /P 12 0 R
-  /K [8 0 R]
+  /S /H1
+  /NS 3 0 R
+  /P 11 0 R
+  /ID (Uheading)
+  /T (A heading)
+  /K [1]
+  /Pg 16 0 R
 >>
 endobj
 
 10 0 obj
 <<
   /Type /StructElem
-  /S /H1
-  /NS 4 0 R
-  /P 12 0 R
-  /ID (Uheading)
-  /T (A heading)
-  /K [1]
-  /Pg 17 0 R
+  /S /P
+  /NS 3 0 R
+  /P 11 0 R
+  /K [2]
+  /Pg 16 0 R
 >>
 endobj
 
 11 0 obj
 <<
   /Type /StructElem
-  /S /P
-  /NS 4 0 R
-  /P 12 0 R
-  /K [2]
-  /Pg 17 0 R
+  /S /Document
+  /NS 3 0 R
+  /P 2 0 R
+  /K [8 0 R 9 0 R 10 0 R]
 >>
 endobj
 
 12 0 obj
 <<
-  /Type /StructElem
-  /S /Document
-  /NS 4 0 R
-  /P 3 0 R
-  /K [9 0 R 10 0 R 11 0 R]
+  /Font <<
+    /f0 13 0 R
+  >>
 >>
 endobj
 
 13 0 obj
 <<
-  /Font <<
-    /f0 14 0 R
-  >>
->>
-endobj
-
-14 0 obj
-<<
   /Type /Font
   /Subtype /Type0
   /BaseFont /LMRURN+NotoSans-Regular
   /Encoding /Identity-H
-  /DescendantFonts [15 0 R]
-  /ToUnicode 18 0 R
+  /DescendantFonts [14 0 R]
+  /ToUnicode 17 0 R
 >>
 endobj
 
-15 0 obj
+14 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -144,14 +138,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 16 0 R
+  /FontDescriptor 15 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 639 2 2 260 3 3 618 4 4 564 5 5 561 6 6 615 7 7 258 8 8 618 9 9 615 10 10 556 11 11 479 12 12 605 13 13 935 14 14 361 15 15 529]
 >>
 endobj
 
-16 0 obj
+15 0 obj
 <<
   /Type /FontDescriptor
   /FontName /LMRURN+NotoSans-Regular
@@ -162,23 +156,23 @@ endobj
   /Descent -293
   /CapHeight 714
   /StemV 95.4
-  /FontFile2 19 0 R
+  /FontFile2 18 0 R
 >>
 endobj
 
-17 0 obj
+16 0 obj
 <<
   /Type /Page
-  /Resources 13 0 R
+  /Resources 12 0 R
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Tabs /S
   /Parent 1 0 R
-  /Contents 20 0 R
+  /Contents 19 0 R
 >>
 endobj
 
-18 0 obj
+17 0 obj
 <<
   /Length 816
   /Type /CMap
@@ -233,7 +227,7 @@ end
 endstream
 endobj
 
-19 0 obj
+18 0 obj
 <<
   /Length 3586
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -293,7 +287,7 @@ DD98E3982CE7C18D6D97A79CC2540E51A52F64459E6F8F8C62116B16BB73781F4584C8
 endstream
 endobj
 
-20 0 obj
+19 0 obj
 <<
   /Length 579
 >>
@@ -343,66 +337,64 @@ EMC
 endstream
 endobj
 
-22 0 obj
+21 0 obj
 <<
   /Length 992
   /Type /Metadata
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>2</pdfuaid:part><pdfuaid:rev>2024</pdfuaid:rev><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>GDEyAvDUcYgFH8Zx0BaCAw==</xmpMM:InstanceID><xmpMM:DocumentID>GDEyAvDUcYgFH8Zx0BaCAw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>2.0</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>2</pdfuaid:part><pdfuaid:rev>2024</pdfuaid:rev><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>htJE9qVcoMiY6e8VGLjXRQ==</xmpMM:InstanceID><xmpMM:DocumentID>htJE9qVcoMiY6e8VGLjXRQ==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>2.0</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
-23 0 obj
+22 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
-  /Metadata 22 0 R
+  /Metadata 21 0 R
   /Lang (en)
-  /StructTreeRoot 3 0 R
+  /StructTreeRoot 2 0 R
   /MarkInfo <<
     /Marked true
   >>
   /ViewerPreferences <<
     /DisplayDocTitle true
   >>
-  /Outlines 2 0 R
 >>
 endobj
 
 xref
-0 24
-0000000021 65535 f
+0 23
+0000000020 65535 f
 0000000016 00000 n
 0000000081 00000 n
-0000000121 00000 n
-0000000323 00000 n
-0000000396 00000 n
-0000000554 00000 n
-0000000592 00000 n
-0000000683 00000 n
-0000000776 00000 n
-0000000853 00000 n
-0000000985 00000 n
-0000001082 00000 n
-0000001190 00000 n
-0000001244 00000 n
-0000001408 00000 n
-0000001802 00000 n
-0000002030 00000 n
-0000002178 00000 n
-0000003074 00000 n
-0000006757 00000 n
+0000000282 00000 n
+0000000355 00000 n
+0000000513 00000 n
+0000000550 00000 n
+0000000641 00000 n
+0000000733 00000 n
+0000000810 00000 n
+0000000941 00000 n
+0000001038 00000 n
+0000001145 00000 n
+0000001199 00000 n
+0000001363 00000 n
+0000001757 00000 n
+0000001985 00000 n
+0000002133 00000 n
+0000003029 00000 n
+0000006712 00000 n
 0000000000 00000 f
-0000007391 00000 n
-0000008472 00000 n
+0000007346 00000 n
+0000008427 00000 n
 trailer
 <<
-  /Size 24
-  /Root 23 0 R
-  /ID [(GDEyAvDUcYgFH8Zx0BaCAw==) (GDEyAvDUcYgFH8Zx0BaCAw==)]
+  /Size 23
+  /Root 22 0 R
+  /ID [(htJE9qVcoMiY6e8VGLjXRQ==) (htJE9qVcoMiY6e8VGLjXRQ==)]
 >>
 startxref
-8693
+8630
 %%EOF
