@@ -264,6 +264,9 @@ pub(crate) struct SerializeContext {
     /// The file specifications of the MathML attached to formula tags. Equal
     /// MathML is written once.
     mathml_files: BTreeMap<String, Ref>,
+    /// PDF 2.0 tags that a document older than PDF 2.0 uses and that are only
+    /// role-mapped when they are used.
+    rolemapped_tags: BTreeSet<&'static str>,
     /// Information for each page written so far, index by the page index.
     page_infos: Vec<PageInfo>,
     /// Keep track of object hashes and their corresponding reference. This is used for
@@ -319,6 +322,7 @@ impl SerializeContext {
             page_tree_ref,
             structure_destination_targets: BTreeMap::new(),
             mathml_files: BTreeMap::new(),
+            rolemapped_tags: BTreeSet::new(),
             page_infos: vec![],
             location: None,
             validation_errors: vec![],
@@ -943,6 +947,11 @@ impl SerializeContext {
         Ok(())
     }
 
+    /// Remember that the role mapping of a PDF 2.0 tag has to be written.
+    pub(crate) fn register_rolemapped_tag(&mut self, name: &'static str) {
+        self.rolemapped_tags.insert(name);
+    }
+
     /// The file specification for MathML that a formula tag refers to in its `AF`.
     pub(crate) fn register_mathml(&mut self, mathml: &str, location: Option<Location>) -> Ref {
         if let Some(file) = self.mathml_files.get(mathml) {
@@ -1039,6 +1048,13 @@ impl SerializeContext {
                 role_map.insert(Name(b"Title"), StructRole::P);
                 role_map.insert(Name(b"Strong"), StructRole::Span);
                 role_map.insert(Name(b"Em"), StructRole::Span);
+                for name in &self.rolemapped_tags {
+                    let role = match *name {
+                        "Aside" => StructRole::Div,
+                        _ => StructRole::Private,
+                    };
+                    role_map.insert(Name(name.as_bytes()), role);
+                }
                 for level in self.global_objects.custom_heading_roles.iter() {
                     let role2 = StructRole2::Heading(*level);
                     role_map.insert(role2.to_name(&mut [0; 6]), StructRole::P);

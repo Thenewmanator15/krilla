@@ -368,6 +368,13 @@ optional = [
 #
 # This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
 [Tag.Aside]
+# Content that is not part of the document's real content, but only means something
+# next to content that is, such as the number of a line. Other artifacts are better
+# marked with `ContentTag::Artifact`, which keeps them out of the tag tree.
+#
+# This is a PDF 2.0 tag. In older versions it is role-mapped to `Private`.
+[Tag.Artifact]
+required = ["Struct::ArtifactKind"]
 # Encloses content with strong importance, most commonly **bold** text.
 [Tag.Strong]
 # Encloses content that is emphasized, most commonly *italic* text.
@@ -404,6 +411,11 @@ Refs = { type = "Vec<TagId>", global = true, accessor = "Custom" }
 # relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
 # mathematical expressions.
 MathMl = { name = "mathml", type = "String", accessor = "AsRef<str>" }
+# What kind of artifact an `Artifact` tag encloses.
+#
+# Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+# `Artifact` owner.
+ArtifactKind = { name = "artifact_type", type = "ArtifactType", accessor = "Copy" }
 # Whether a note is a footnote or an endnote.
 #
 # Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.

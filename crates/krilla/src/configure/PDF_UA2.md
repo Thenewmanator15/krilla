@@ -41,6 +41,10 @@ See `README.md` for the meaning of each color.
 - krilla writes the `note_type` attribute of a `Note` as the `NoteType` of the `FENote`
   (clause 8.2.5.14.2), and the `aria_role` attribute of any tag as the `role` of the
   `ARIA-1.1` attribute owner (clause 8.2.6.4). 🟢
+- krilla has the `Artifact` tag for an artifact that only means something next to real
+  content, such as a line number (clause 8.3.2), and writes its kind as the `Type` and
+  `Subtype` of the `Artifact` attribute owner. Using it where it applies is up to the
+  user. 🟣
 - krilla does not require an alternative description on a `Formula` that has MathML.
   Clause 8.2.5.29.2 asks for one only on a formula that is not mathematical. 🟢
 - krilla rejects link annotations, go-to actions and outline entries whose destination does

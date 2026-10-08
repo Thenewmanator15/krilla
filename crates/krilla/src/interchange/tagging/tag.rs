@@ -6,6 +6,7 @@ use smallvec::SmallVec;
 use crate::configure::PdfVersion;
 use crate::geom::Rect;
 use crate::surface::Location;
+use crate::tagging::ArtifactType;
 
 include!("generated.rs");
 

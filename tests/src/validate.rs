@@ -829,6 +829,65 @@ fn validate_pdf_ua2_aside_and_description_list(document: &mut Document) {
     document.set_metadata(metadata);
 }
 
+// A line number is an artifact that only means something next to its line, so it is an
+// `Artifact` structure element inside the paragraph (8.3.2). The figure in an `Aside`
+// is there for the older version, where both tags are role-mapped.
+fn line_number_and_aside(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    let mut ids = vec![];
+    for (index, text) in ["1", "A numbered line", "A figure"].into_iter().enumerate() {
+        let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.draw_text(
+            Point::from_xy(30.0 * index as f32, 50.0),
+            font.clone(),
+            20.0,
+            text,
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+        ids.push(id);
+    }
+    surface.finish();
+    page.finish();
+    let [number_id, line_id, figure_id] = ids.try_into().unwrap();
+
+    let mut number = TagGroup::new(Tag::Artifact(ArtifactType::LineNumber));
+    number.push(number_id);
+    let mut paragraph = TagGroup::new(Tag::P);
+    paragraph.push(number);
+    paragraph.push(line_id);
+
+    let mut figure = TagGroup::new(Tag::Figure(Some("A figure".to_string())));
+    figure.push(figure_id);
+    let mut aside = TagGroup::new(Tag::Aside);
+    aside.push(figure);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(paragraph);
+    tag_tree.push(aside);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("A numbered line".to_string());
+    document.set_metadata(metadata);
+    document.set_outline(Outline::new());
+}
+
+#[snapshot(document, settings_34)]
+fn validate_pdf_ua2_artifact_element(document: &mut Document) {
+    line_number_and_aside(document);
+}
+
+#[snapshot(document, settings_15)]
+fn validate_pdf_ua1_role_mapped_pdf2_tags(document: &mut Document) {
+    line_number_and_aside(document);
+}
+
 // A bibliography is a section with the role `doc-bibliography` (8.2.5.31).
 #[snapshot(document, settings_34)]
 fn validate_pdf_ua2_bibliography_role(document: &mut Document) {

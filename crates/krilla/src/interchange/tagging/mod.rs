@@ -197,7 +197,7 @@ impl Artifact {
 }
 
 /// A type of artifact.
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum ArtifactType {
     /// The header of a page.
     Header,
@@ -573,7 +573,12 @@ impl TagKind {
             Self::Terms(_) => write_kind_custom(sc, struct_elem, Name(b"Terms")),
             // PDF 2.0 structure roles that are conditionally registered.
             Self::Title(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Title),
-            Self::Aside(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Aside),
+            Self::Aside(_) => {
+                write_kind_rolemapped_if_used(sc, struct_elem, StructRole2::Aside, "Aside")
+            }
+            Self::Artifact(_) => {
+                write_kind_rolemapped_if_used(sc, struct_elem, StructRole2::Artifact, "Artifact")
+            }
             Self::Strong(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Strong),
             Self::Em(_) => write_kind_rolemapped(sc, struct_elem, StructRole2::Em),
             Self::Hn(tag) => {
@@ -636,6 +641,7 @@ impl TagKind {
             Self::Terms(_) => PdfVersion::Pdf14,
             Self::Title(_) => PdfVersion::Pdf14,
             Self::Aside(_) => PdfVersion::Pdf14,
+            Self::Artifact(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
         }
@@ -682,6 +688,20 @@ fn write_kind_rolemapped(
     } else {
         struct_elem.kind_2(role, sc.pdf2_ns.ssn_ref);
     }
+}
+
+/// Like [`write_kind_rolemapped`], for a role whose mapping is only written when a
+/// document uses it, so that documents without it stay as they are.
+fn write_kind_rolemapped_if_used(
+    sc: &mut SerializeContext,
+    struct_elem: &mut StructElement,
+    role: StructRole2,
+    name: &'static str,
+) {
+    if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
+        sc.register_rolemapped_tag(name);
+    }
+    write_kind_rolemapped(sc, struct_elem, role);
 }
 
 /// Write a custom role-mapped structure role. If serializing a PDF 2.0 document
@@ -888,7 +908,9 @@ impl TagGroup {
                     }
                 }
                 // Written with the other attribute owners below.
-                StructAttr::NoteType(_) | StructAttr::AriaRole(_) => (),
+                StructAttr::NoteType(_) | StructAttr::AriaRole(_) | StructAttr::ArtifactKind(_) => {
+                    ()
+                }
                 StructAttr::Title(title) => {
                     struct_elem.title(TextStr(title));
                 }
@@ -922,6 +944,15 @@ impl TagGroup {
         if pdf_version >= PdfVersion::Pdf20 {
             if let Some(note_type) = tag.note_type() {
                 attributes.push().note().note_type(note_type.to_pdf());
+            }
+            if let Some(kind) = tag.artifact_type() {
+                let mut artifact = attributes.push().artifact();
+                if let Some(artifact_type) = kind.to_pdf_artifact_type() {
+                    artifact.artifact_type(artifact_type);
+                }
+                if let Some(subtype) = kind.to_pdf_artifact_subtype() {
+                    artifact.subtype(subtype);
+                }
             }
             if let Some(role) = tag.aria_role().filter(|role| !role.is_empty()) {
                 let mut aria = attributes.push();
