@@ -133,6 +133,12 @@ pub enum TagKind {
     ///
     /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
     Aside(Tag<kind::Aside>),
+    /// Content that is not part of the document's real content, but only means something
+    /// next to content that is, such as the number of a line. Other artifacts are better
+    /// marked with `ContentTag::Artifact`, which keeps them out of the tag tree.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Private`.
+    Artifact(Tag<kind::Artifact>),
     /// Encloses content with strong importance, most commonly **bold** text.
     Strong(Tag<kind::Strong>),
     /// Encloses content that is emphasized, most commonly *italic* text.
@@ -181,6 +187,7 @@ impl TagKind {
             Self::Terms(tag) => tag.as_any(),
             Self::Title(tag) => tag.as_any(),
             Self::Aside(tag) => tag.as_any(),
+            Self::Artifact(tag) => tag.as_any(),
             Self::Strong(tag) => tag.as_any(),
             Self::Em(tag) => tag.as_any(),
         }
@@ -228,6 +235,7 @@ impl TagKind {
             Self::Terms(tag) => tag.as_any_mut(),
             Self::Title(tag) => tag.as_any_mut(),
             Self::Aside(tag) => tag.as_any_mut(),
+            Self::Artifact(tag) => tag.as_any_mut(),
             Self::Strong(tag) => tag.as_any_mut(),
             Self::Em(tag) => tag.as_any_mut(),
         }
@@ -370,6 +378,14 @@ impl TagKind {
     /// mathematical expressions.
     pub fn mathml(&self) -> Option<&str> {
         self.as_any().mathml()
+    }
+
+    /// What kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    pub fn artifact_type(&self) -> Option<ArtifactType> {
+        self.as_any().artifact_type()
     }
 
     /// Whether a note is a footnote or an endnote.
@@ -968,6 +984,14 @@ impl AnyTag {
     /// mathematical expressions.
     pub fn mathml(&self) -> Option<&str> {
         self.get_struct(StructAttr::MATH_ML).map(StructAttr::unwrap_mathml)
+    }
+
+    /// What kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    pub fn artifact_type(&self) -> Option<ArtifactType> {
+        self.get_struct(StructAttr::ARTIFACT_KIND).map(StructAttr::unwrap_artifact_type)
     }
 
     /// Whether a note is a footnote or an endnote.
@@ -1945,6 +1969,14 @@ pub mod kind {
     /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Div`.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Aside;
+
+    /// Content that is not part of the document's real content, but only means something
+    /// next to content that is, such as the number of a line. Other artifacts are better
+    /// marked with `ContentTag::Artifact`, which keeps them out of the tag tree.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Private`.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Artifact;
 
     /// Encloses content with strong importance, most commonly **bold** text.
     #[derive(Clone, Debug, PartialEq)]
@@ -4404,6 +4436,50 @@ impl Tag<kind::Aside> {
     pub const Aside: Tag<kind::Aside> = Tag::new();
 }
 
+impl From<Tag<kind::Artifact>> for TagKind {
+    fn from(value: Tag<kind::Artifact>) -> Self {
+        Self::Artifact(value)
+    }
+}
+impl Tag<kind::Artifact> {
+    /// Content that is not part of the document's real content, but only means something
+    /// next to content that is, such as the number of a line. Other artifacts are better
+    /// marked with `ContentTag::Artifact`, which keeps them out of the tag tree.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is role-mapped to `Private`.
+    #[allow(non_snake_case)]
+    pub fn Artifact(artifact_type: ArtifactType) -> Tag<kind::Artifact> {
+        let mut tag = Tag::new();
+        tag.set_artifact_type(artifact_type);
+        tag
+    }
+
+    /// What kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    pub fn artifact_type(&self) -> ArtifactType {
+        self.inner.get_struct(StructAttr::ARTIFACT_KIND).unwrap().unwrap_artifact_type()
+    }
+
+    /// Set what kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    pub fn set_artifact_type(&mut self, artifact_type: ArtifactType) {
+        self.inner.set_struct(StructAttr::ArtifactKind(artifact_type));
+    }
+
+    /// Set what kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    pub fn with_artifact_type(mut self, artifact_type: ArtifactType) -> Self {
+        self.set_artifact_type(artifact_type);
+        self
+    }
+}
+
 impl From<Tag<kind::Strong>> for TagKind {
     fn from(value: Tag<kind::Strong>) -> Self {
         Self::Strong(value)
@@ -4511,6 +4587,11 @@ pub(crate) enum StructAttr {
     /// relationship `Supplement`. PDF/UA-2 requires this, or MathML tags, for
     /// mathematical expressions.
     MathMl(String),
+    /// What kind of artifact an `Artifact` tag encloses.
+    ///
+    /// Only written for PDF 2.0, as the `Type` and `Subtype` attributes of the
+    /// `Artifact` owner.
+    ArtifactKind(ArtifactType),
     /// Whether a note is a footnote or an endnote.
     ///
     /// Only written for PDF 2.0, as the `NoteType` attribute of an `FENote`.
@@ -4535,10 +4616,11 @@ impl StructAttr {
     pub(crate) const ACTUAL_TEXT: usize = 4;
     pub(crate) const REFS: usize = 5;
     pub(crate) const MATH_ML: usize = 6;
-    pub(crate) const NOTE_TYPE: usize = 7;
-    pub(crate) const ARIA_ROLE: usize = 8;
-    pub(crate) const TITLE: usize = 9;
-    pub(crate) const HEADING_LEVEL: usize = 10;
+    pub(crate) const ARTIFACT_KIND: usize = 7;
+    pub(crate) const NOTE_TYPE: usize = 8;
+    pub(crate) const ARIA_ROLE: usize = 9;
+    pub(crate) const TITLE: usize = 10;
+    pub(crate) const HEADING_LEVEL: usize = 11;
 
         #[inline(always)]
         fn unwrap_id(&self) -> &TagId {
@@ -4597,6 +4679,14 @@ impl StructAttr {
         }
 
         #[inline(always)]
+        fn unwrap_artifact_type(&self) -> ArtifactType {
+            match self {
+                Self::ArtifactKind(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
         fn unwrap_note_type(&self) -> NoteType {
             match self {
                 Self::NoteType(val) => *val,
@@ -4639,6 +4729,7 @@ impl Ordinal for StructAttr {
             Self::ActualText(_) => Self::ACTUAL_TEXT,
             Self::Refs(_) => Self::REFS,
             Self::MathMl(_) => Self::MATH_ML,
+            Self::ArtifactKind(_) => Self::ARTIFACT_KIND,
             Self::NoteType(_) => Self::NOTE_TYPE,
             Self::AriaRole(_) => Self::ARIA_ROLE,
             Self::Title(_) => Self::TITLE,
@@ -4654,7 +4745,7 @@ pub(crate) enum ListAttr {
 }
 
 impl ListAttr {
-    pub(crate) const NUMBERING: usize = 11;
+    pub(crate) const NUMBERING: usize = 12;
 
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
@@ -4693,11 +4784,11 @@ pub(crate) enum TableAttr {
 }
 
 impl TableAttr {
-    pub(crate) const SUMMARY: usize = 12;
-    pub(crate) const HEADER_SCOPE: usize = 13;
-    pub(crate) const CELL_HEADERS: usize = 14;
-    pub(crate) const ROW_SPAN: usize = 15;
-    pub(crate) const COL_SPAN: usize = 16;
+    pub(crate) const SUMMARY: usize = 13;
+    pub(crate) const HEADER_SCOPE: usize = 14;
+    pub(crate) const CELL_HEADERS: usize = 15;
+    pub(crate) const ROW_SPAN: usize = 16;
+    pub(crate) const COL_SPAN: usize = 17;
 
         #[inline(always)]
         fn unwrap_summary(&self) -> &str {
@@ -4819,36 +4910,36 @@ pub(crate) enum LayoutAttr {
 }
 
 impl LayoutAttr {
-    pub(crate) const PLACEMENT: usize = 17;
-    pub(crate) const WRITING_MODE: usize = 18;
-    pub(crate) const B_BOX: usize = 19;
-    pub(crate) const WIDTH: usize = 20;
-    pub(crate) const HEIGHT: usize = 21;
-    pub(crate) const BACKGROUND_COLOR: usize = 22;
-    pub(crate) const BORDER_COLOR: usize = 23;
-    pub(crate) const BORDER_STYLE: usize = 24;
-    pub(crate) const BORDER_THICKNESS: usize = 25;
-    pub(crate) const PADDING: usize = 26;
-    pub(crate) const COLOR: usize = 27;
-    pub(crate) const SPACE_BEFORE: usize = 28;
-    pub(crate) const SPACE_AFTER: usize = 29;
-    pub(crate) const START_INDENT: usize = 30;
-    pub(crate) const END_INDENT: usize = 31;
-    pub(crate) const TEXT_INDENT: usize = 32;
-    pub(crate) const TEXT_ALIGN: usize = 33;
-    pub(crate) const BLOCK_ALIGN: usize = 34;
-    pub(crate) const INLINE_ALIGN: usize = 35;
-    pub(crate) const TABLE_BORDER_STYLE: usize = 36;
-    pub(crate) const TABLE_PADDING: usize = 37;
-    pub(crate) const BASELINE_SHIFT: usize = 38;
-    pub(crate) const LINE_HEIGHT: usize = 39;
-    pub(crate) const TEXT_DECORATION_COLOR: usize = 40;
-    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 41;
-    pub(crate) const TEXT_DECORATION_TYPE: usize = 42;
-    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 43;
-    pub(crate) const COLUMN_COUNT: usize = 44;
-    pub(crate) const COLUMN_GAP: usize = 45;
-    pub(crate) const COLUMN_WIDTHS: usize = 46;
+    pub(crate) const PLACEMENT: usize = 18;
+    pub(crate) const WRITING_MODE: usize = 19;
+    pub(crate) const B_BOX: usize = 20;
+    pub(crate) const WIDTH: usize = 21;
+    pub(crate) const HEIGHT: usize = 22;
+    pub(crate) const BACKGROUND_COLOR: usize = 23;
+    pub(crate) const BORDER_COLOR: usize = 24;
+    pub(crate) const BORDER_STYLE: usize = 25;
+    pub(crate) const BORDER_THICKNESS: usize = 26;
+    pub(crate) const PADDING: usize = 27;
+    pub(crate) const COLOR: usize = 28;
+    pub(crate) const SPACE_BEFORE: usize = 29;
+    pub(crate) const SPACE_AFTER: usize = 30;
+    pub(crate) const START_INDENT: usize = 31;
+    pub(crate) const END_INDENT: usize = 32;
+    pub(crate) const TEXT_INDENT: usize = 33;
+    pub(crate) const TEXT_ALIGN: usize = 34;
+    pub(crate) const BLOCK_ALIGN: usize = 35;
+    pub(crate) const INLINE_ALIGN: usize = 36;
+    pub(crate) const TABLE_BORDER_STYLE: usize = 37;
+    pub(crate) const TABLE_PADDING: usize = 38;
+    pub(crate) const BASELINE_SHIFT: usize = 39;
+    pub(crate) const LINE_HEIGHT: usize = 40;
+    pub(crate) const TEXT_DECORATION_COLOR: usize = 41;
+    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 42;
+    pub(crate) const TEXT_DECORATION_TYPE: usize = 43;
+    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 44;
+    pub(crate) const COLUMN_COUNT: usize = 45;
+    pub(crate) const COLUMN_GAP: usize = 46;
+    pub(crate) const COLUMN_WIDTHS: usize = 47;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {

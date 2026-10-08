@@ -197,7 +197,7 @@ impl Artifact {
 }
 
 /// A type of artifact.
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum ArtifactType {
     /// The header of a page.
     Header,
@@ -581,6 +581,8 @@ impl TagKind {
             }
             // Written as `Div` before PDF 2.0.
             Self::Aside(_) => write_kind_compat(sc, struct_elem, StructRole2::Aside),
+            // Written as `Private` before PDF 2.0.
+            Self::Artifact(_) => write_kind_compat(sc, struct_elem, StructRole2::Artifact),
             Self::Hn(tag) => {
                 let role2 = StructRole2::Heading(tag.level());
                 if pdf_version < PdfVersion::Pdf20 {
@@ -655,6 +657,7 @@ impl TagKind {
             Self::Terms(_) => PdfVersion::Pdf14,
             Self::Title(_) => PdfVersion::Pdf14,
             Self::Aside(_) => PdfVersion::Pdf14,
+            Self::Artifact(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
         }
@@ -892,7 +895,9 @@ impl TagGroup {
                     }
                 }
                 // Written with the other attribute owners below.
-                StructAttr::NoteType(_) | StructAttr::AriaRole(_) => (),
+                StructAttr::NoteType(_) | StructAttr::AriaRole(_) | StructAttr::ArtifactKind(_) => {
+                    ()
+                }
                 StructAttr::Title(title) => {
                     struct_elem.title(TextStr(title));
                 }
@@ -926,6 +931,15 @@ impl TagGroup {
         if pdf_version >= PdfVersion::Pdf20 {
             if let Some(note_type) = tag.note_type() {
                 attributes.push().note().note_type(note_type.to_pdf());
+            }
+            if let Some(kind) = tag.artifact_type() {
+                let mut artifact = attributes.push().artifact();
+                if let Some(artifact_type) = kind.to_pdf_artifact_type() {
+                    artifact.artifact_type(artifact_type);
+                }
+                if let Some(subtype) = kind.to_pdf_artifact_subtype() {
+                    artifact.subtype(subtype);
+                }
             }
             if let Some(role) = tag.aria_role().filter(|role| !role.is_empty()) {
                 let mut aria = attributes.push();

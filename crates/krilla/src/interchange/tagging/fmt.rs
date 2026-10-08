@@ -157,6 +157,7 @@ impl Output for TagKind {
             TagKind::Terms(_) => write!(f, "Terms"),
             TagKind::Title(_) => write!(f, "Title"),
             TagKind::Aside(_) => write!(f, "Aside"),
+            TagKind::Artifact(_) => write!(f, "Artifact"),
             TagKind::Strong(_) => write!(f, "Strong"),
             TagKind::Em(_) => write!(f, "Em"),
         }?;
@@ -193,6 +194,7 @@ impl Output for Attr {
                 Title(title) => writeln!(f, "/T: {title:?}"),
                 MathMl(mathml) => writeln!(f, "/AF: {mathml:?}"),
                 NoteType(note_type) => writeln!(f, "/NoteType: {note_type:?}"),
+                ArtifactKind(kind) => writeln!(f, "/Type: {kind:?}"),
                 AriaRole(role) => writeln!(f, "/role: {role:?}"),
                 Refs(refs) => {
                     write!(f, "/Ref: [")?;
