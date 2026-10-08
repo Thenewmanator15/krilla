@@ -38,10 +38,21 @@ impl Action {
             Action::Goto(dest) => {
                 action.action_type(ActionType::GoTo);
                 if dest.is_structure_destination(sc) {
-                    // `D` is required and leads to the page, `SD` leads to the tag.
-                    dest.to_page_destination()
-                        .write(sc, action.insert(Name(b"D")))?;
-                    dest.write(sc, action.insert(Name(b"SD")))
+                    // `D` is required and leads to the page, `SD` leads to the tag and
+                    // has to be an array (ISO 32000-2, table 202).
+                    match dest {
+                        Destination::Xyz(_) => {
+                            dest.to_page_destination()
+                                .write(sc, action.insert(Name(b"D")))?;
+                            dest.write(sc, action.insert(Name(b"SD")))
+                        }
+                        Destination::Named(named) => {
+                            dest.write(sc, action.insert(Name(b"D")))?;
+                            let structure = sc.register_xyz_destination((*named.xyz_dest).clone());
+                            action.pair(Name(b"SD"), structure);
+                            Ok(())
+                        }
+                    }
                 } else {
                     dest.serialize(sc, action.insert(Name(b"D")), location)
                 }

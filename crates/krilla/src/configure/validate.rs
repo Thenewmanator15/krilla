@@ -1136,6 +1136,9 @@ impl Accessibility {
                 ValidationError::NonStructureDestination(_)
                 | ValidationError::MissingStructureRef(_),
             ) => false,
+            // ISO 14289-2, 8.12.2: longer documents should include an outline. PDF/UA-1
+            // requires one.
+            (Self::UA2, ValidationError::MissingDocumentOutline) => false,
             (
                 Self::UA1 | Self::UA2,
                 ValidationError::ContainsNotDefGlyph(_, _, _)

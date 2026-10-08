@@ -29,22 +29,29 @@ See `README.md` for the meaning of each color.
 - krilla requires a `Note` to have `refs`, on itself or on one of its descendants (clause
   8.2.5.14). That the content citing the note refers back to it is up to the user. 🟣
 - krilla writes a destination that leads to a tag (`XyzDestination::with_tag`) as a
-  structure destination: in the `Dest` of link annotations and outline entries, as the
-  target of a named destination, and as the `SD` of a go-to action, next to a `D` that
-  leads to the page. It checks that the tag exists (clause 8.8). 🟢
+  structure destination (ISO 32000-2, 12.3.2.3): in the `Dest` of link annotations and
+  outline entries, and as the `SD` of a go-to action, next to a `D` that leads to the page
+  (ISO 32000-2, table 202). A named destination that leads to a tag is a dictionary with
+  the page destination as `D` and the structure destination as `SD` (ISO 32000-2,
+  12.3.2.4). It checks that the tag exists (clause 8.8). 🟢
 - krilla rejects link annotations, go-to actions and outline entries whose destination does
   not lead to a tag (clause 8.8). 🟢
-- krilla applies every check it applies for PDF/UA-1 (see `PDF_UA1.md`): codepoint mappings,
-  alternative text, heading titles, tagging, font licenses, embedded file descriptions,
-  embedded PDFs and the document outline. 🟢
+- krilla applies the checks it applies for PDF/UA-1 (see `PDF_UA1.md`): codepoint mappings,
+  alternative text, heading titles, tagging, font licenses, embedded file descriptions and
+  embedded PDFs. It does not require a document outline, which clause 8.12.2 only
+  recommends for longer documents. 🟢
 
 # Known to be missing
 
-- A go-to action with a named structure destination gets the same name as `D` and `SD`,
-  so its `D` leads to a structure destination as well. Whether that is allowed for `D` has
-  not been checked against ISO 32000-2. 🟠
 - A named destination that is registered with the document but never linked to is not
   checked. 🟠
+- Mathematical expressions have to be given as MathML, as structure elements or as an
+  associated file on the `Formula` (clause 8.2.5.29.1). krilla can do neither, so a document
+  with a mathematical `Formula` does not conform. veraPDF does not check this. 🔴
+- A link to a target in the same document should be a `Reference` rather than a `Link`
+  (clause 8.2.5.20). This is up to the user. 🟣
+- Leaders in a table of contents have to be artifacts (clause 8.2.5.8). This is up to the
+  user. 🟣
 - krilla does not write the `NoteType` attribute of `FENote`, which then has its default
   value `None`. 🔴
 - A list whose items have `Lbl` elements needs a `ListNumbering` other than `None` (clause
@@ -52,9 +59,13 @@ See `README.md` for the meaning of each color.
   values `Ordered`, `Unordered` and `Description`. 🟣
 - The `Document` element must not contain content items directly (ISO 32005, table 5). This
   is up to the user and not checked. 🟣
-- Mathematical expressions can be given as MathML. krilla has no way to attach it. 🔴
-- Whether a document outline is required as in PDF/UA-1 has not been checked against the
-  standard; krilla requires one for now, which is the stricter choice. 🟠
+
+# Read against
+
+ISO 14289-2:2024 clauses 5, 8.2.4, 8.2.5.2, 8.2.5.8, 8.2.5.12, 8.2.5.14, 8.2.5.20, 8.2.5.25,
+8.2.5.27 to 8.2.5.29, 8.8, 8.9.3.3, 8.10.2.3 and 8.12.2, and ISO 32000-2:2020 12.3.2.3,
+12.3.2.4 and tables 202, 355, 372 and 382. The rest of the standard has not been gone
+through for this file.
 
 # Checked with
 
