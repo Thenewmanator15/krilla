@@ -276,6 +276,11 @@ impl LinkAnnotation {
         }
 
         match &self.target {
+            // A structure destination is written as the `SD` of a go-to action, which keeps
+            // a page destination in `D` for viewers that do not know structure destinations.
+            Target::Destination(destination) if destination.is_structure_destination(sc) => {
+                Action::Goto(destination.clone()).serialize(sc, annotation.action(), location)
+            }
             Target::Destination(destination) => {
                 destination.serialize(sc, annotation.insert(Name(b"Dest")), location)
             }

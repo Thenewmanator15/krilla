@@ -38,6 +38,9 @@ impl Action {
             Action::Goto(dest) => {
                 action.action_type(ActionType::GoTo);
                 if dest.is_structure_destination(sc) {
+                    if let Some(id) = dest.tag() {
+                        sc.register_structure_destination_location(id, location);
+                    }
                     // `D` is required and leads to the page, `SD` leads to the tag and
                     // has to be an array (ISO 32000-2, table 202).
                     match dest {

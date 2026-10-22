@@ -18,7 +18,8 @@
 //! [`Document`]: crate::Document
 //! [`Document::set_outline`]: crate::Document::set_outline
 
-use pdf_writer::writers::OutlineItem;
+use pdf_writer::types::ActionType;
+use pdf_writer::writers::{Action, OutlineItem};
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
@@ -204,11 +205,25 @@ impl OutlineNode {
 
         outline_entry.title(TextStr(&self.text));
 
-        if self.destination.tag().is_none() {
-            sc.register_validation_error(ValidationError::NonStructureDestination(sc.location));
+        if self.destination.tag().is_some() && sc.writes_structure_destinations() {
+            // A structure destination is written as the `SD` of a go-to action, which keeps
+            // a page destination in `D` for viewers that do not know structure destinations.
+            let page_ref = sc.register_xyz_destination(self.destination.without_tag());
+            let structure_ref = sc.register_xyz_destination(self.destination.clone());
+            let mut action = outline_entry.insert(Name(b"A")).start::<Action>();
+            action.action_type(ActionType::GoTo);
+            action.pair(Name(b"D"), page_ref);
+            action.pair(Name(b"SD"), structure_ref);
+            action.finish();
+        } else {
+            if self.destination.tag().is_none() {
+                // An outline entry has no location of its own, and `sc.location` is only
+                // meaningful while content is drawn.
+                sc.register_validation_error(ValidationError::NonStructureDestination(None));
+            }
+            let dest_ref = sc.register_xyz_destination(self.destination.clone());
+            outline_entry.pair(Name(b"Dest"), dest_ref);
         }
-        let dest_ref = sc.register_xyz_destination(self.destination.clone());
-        outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
 

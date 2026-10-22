@@ -1072,10 +1072,12 @@ fn destinations_differing_in_tag(settings: SerializeSettings) -> usize {
 }
 
 // Before PDF 2.0 the tag is not written, so the two destinations are one and the same.
+// In PDF 2.0 each link is a go-to action with the shared page destination as `D` and its
+// own structure destination as `SD`.
 #[test]
 fn validate_destinations_differing_in_tag() {
     assert_eq!(destinations_differing_in_tag(settings_1()), 1);
-    assert_eq!(destinations_differing_in_tag(settings_25()), 2);
+    assert_eq!(destinations_differing_in_tag(settings_25()), 3);
 }
 
 // A structure destination has to lead to a tag that exists.
