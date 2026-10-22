@@ -579,10 +579,12 @@ impl TagKind {
                     struct_elem.kind_2(StructRole2::Title, sc.pdf2_ns.ssn_ref);
                 }
             }
-            // Written as `Div` before PDF 2.0.
-            Self::Aside(_) => write_kind_compat(sc, struct_elem, StructRole2::Aside),
-            // Written as `Private` before PDF 2.0.
-            Self::Artifact(_) => write_kind_compat(sc, struct_elem, StructRole2::Artifact),
+            Self::Aside(_) => {
+                write_kind_rolemapped_if_used(sc, struct_elem, StructRole2::Aside, "Aside")
+            }
+            Self::Artifact(_) => {
+                write_kind_rolemapped_if_used(sc, struct_elem, StructRole2::Artifact, "Artifact")
+            }
             Self::Hn(tag) => {
                 let role2 = StructRole2::Heading(tag.level());
                 if pdf_version < PdfVersion::Pdf20 {
@@ -689,6 +691,35 @@ fn write_kind_compat(
     } else {
         struct_elem.kind_2(role, sc.pdf2_ns.ssn_ref);
     }
+}
+
+/// If serializing a PDF 2.0 document, write a PDF 2.0 structure role, otherwise
+/// write a PDF 1.7 role-mapped structure role. The role-map has to be manually
+/// registered in the `SerializeContext::serialize_tag_tree()` function.
+fn write_kind_rolemapped(
+    sc: &mut SerializeContext,
+    struct_elem: &mut StructElement,
+    role: StructRole2,
+) {
+    if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
+        struct_elem.custom_kind(role.to_name(&mut [0; 6]));
+    } else {
+        struct_elem.kind_2(role, sc.pdf2_ns.ssn_ref);
+    }
+}
+
+/// Like [`write_kind_rolemapped`], for a role whose mapping is only written when a
+/// document uses it, so that documents without it stay as they are.
+fn write_kind_rolemapped_if_used(
+    sc: &mut SerializeContext,
+    struct_elem: &mut StructElement,
+    role: StructRole2,
+    name: &'static str,
+) {
+    if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
+        sc.register_rolemapped_tag(name);
+    }
+    write_kind_rolemapped(sc, struct_elem, role);
 }
 
 /// Write a custom role-mapped structure role. If serializing a PDF 2.0 document
