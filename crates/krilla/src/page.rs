@@ -11,7 +11,7 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use crate::annotation::AnnotationType;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::{PdfVersion, ValidationError};
+use crate::configure::{Accessibility, ValidationError};
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::form::FormField;
@@ -268,7 +268,7 @@ impl<'a> Page<'a> {
         // PDF/UA-2 asks for a `Contents` entry on a widget that has no `Lbl` in its `Form`
         // structure element, so describe the widget with the field's alternative name.
         if annotation.alt.is_none()
-            && self.sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20
+            && self.sc.serialize_settings().validators().accessibility() == Some(Accessibility::UA2)
         {
             annotation.alt = field.alt_name.clone().filter(|alt| !alt.is_empty());
         }

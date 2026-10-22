@@ -35,8 +35,11 @@ impl Destination {
         buffer: Obj,
         location: Option<Location>,
     ) -> KrillaResult<()> {
-        if self.tag().is_none() {
-            sc.register_validation_error(ValidationError::NonStructureDestination(location));
+        match self.tag() {
+            Some(id) => sc.register_structure_destination_location(id, location),
+            None => {
+                sc.register_validation_error(ValidationError::NonStructureDestination(location))
+            }
         }
 
         self.write(sc, buffer)

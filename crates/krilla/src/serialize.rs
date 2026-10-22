@@ -23,7 +23,7 @@ use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 use crate::graphics::image::Image;
 use crate::graphics::separation::SeparationColorSpace;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
-use crate::interchange::embed::{EmbedError, EmbeddedFile};
+use crate::interchange::embed::{AssociationKind, EmbeddedFile, MimeType};
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagId, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
@@ -31,7 +31,6 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
-use crate::stream::FilterStreamBuilder;
 use crate::surface::{Location, Surface};
 use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
 use crate::util::{NameExt, SipHashable};
@@ -261,9 +260,12 @@ pub(crate) struct SerializeContext {
     /// The references of the tags that structure destinations lead to. They are
     /// allocated before the tag tree is written, so that the destinations can use them.
     structure_destination_targets: BTreeMap<TagId, Ref>,
+    /// Where the first destination that leads to each tag was used, to say where an
+    /// unknown tag id comes from.
+    structure_destination_locations: BTreeMap<TagId, Location>,
     /// The file specifications of the MathML attached to formula tags. Equal
     /// MathML is written once.
-    mathml_files: BTreeMap<String, Ref>,
+    mathml_files: BTreeMap<String, (Ref, Option<Location>)>,
     /// PDF 2.0 tags that a document older than PDF 2.0 uses and that are only
     /// role-mapped when they are used.
     rolemapped_tags: BTreeSet<&'static str>,
@@ -321,6 +323,7 @@ impl SerializeContext {
             cur_ref,
             page_tree_ref,
             structure_destination_targets: BTreeMap::new(),
+            structure_destination_locations: BTreeMap::new(),
             mathml_files: BTreeMap::new(),
             rolemapped_tags: BTreeSet::new(),
             page_infos: vec![],
@@ -583,10 +586,8 @@ impl SerializeContext {
     }
 
     pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) -> Option<Ref> {
-        if let Some((dest_ref, existing, _)) =
-            self.global_objects.named_destinations.get(nd.name.as_ref())
-        {
-            return (existing == nd.xyz_dest.as_ref()).then_some(*dest_ref);
+        if let Some(existing) = self.global_objects.named_destinations.get(nd.name.as_ref()) {
+            return (existing.dest == *nd.xyz_dest).then_some(existing.dest_ref);
         }
 
         let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
@@ -597,7 +598,12 @@ impl SerializeContext {
             .then(|| self.register_xyz_destination(nd.xyz_dest.without_tag()));
         self.global_objects.named_destinations.insert(
             nd.name.clone(),
-            (dest_ref, (*nd.xyz_dest).clone(), page_ref),
+            NamedDestinationEntry {
+                dest_ref,
+                dest: (*nd.xyz_dest).clone(),
+                page_ref,
+                dict_ref: None,
+            },
         );
         Some(dest_ref)
     }
@@ -869,6 +875,19 @@ impl SerializeContext {
     }
 
     /// The reference of the tag with the given id, if a structure destination leads to it.
+    /// Remember where a destination that leads to the tag with the given id was used.
+    pub(crate) fn register_structure_destination_location(
+        &mut self,
+        id: &TagId,
+        location: Option<Location>,
+    ) {
+        if let Some(location) = location {
+            self.structure_destination_locations
+                .entry(id.clone())
+                .or_insert(location);
+        }
+    }
+
     pub(crate) fn structure_destination_target(&self, id: &TagId) -> Option<Ref> {
         self.structure_destination_targets.get(id).copied()
     }
@@ -911,9 +930,9 @@ impl SerializeContext {
             .global_objects
             .named_destinations
             .iter()
-            .filter_map(|(name, (dest_ref, dest, page_ref))| {
-                self.structure_destination_target(dest.tag()?)?;
-                Some((name.clone(), *dest_ref, (*page_ref)?))
+            .filter_map(|(name, entry)| {
+                self.structure_destination_target(entry.dest.tag()?)?;
+                Some((name.clone(), entry.dest_ref, entry.page_ref?))
             })
             .collect::<Vec<_>>();
         // The map has no order of its own, and the references are numbered in this order.
@@ -930,7 +949,7 @@ impl SerializeContext {
             dict.pair(Name(b"SD"), structure_ref);
             dict.finish();
             if let Some(entry) = self.global_objects.named_destinations.get_mut(&name) {
-                entry.0 = dict_ref;
+                entry.dict_ref = Some(dict_ref);
             }
         }
     }
@@ -954,56 +973,39 @@ impl SerializeContext {
 
     /// The file specification for MathML that a formula tag refers to in its `AF`.
     pub(crate) fn register_mathml(&mut self, mathml: &str, location: Option<Location>) -> Ref {
-        if let Some(file) = self.mathml_files.get(mathml) {
+        if let Some((file, _)) = self.mathml_files.get(mathml) {
             return *file;
         }
 
-        // An associated file is an embedded file, which not every standard allows.
-        self.register_validation_error(ValidationError::EmbeddedFile(
-            EmbedError::Existence,
-            location,
-        ));
         let file = self.new_ref();
-        self.mathml_files.insert(mathml.to_string(), file);
+        self.mathml_files
+            .insert(mathml.to_string(), (file, location));
         file
     }
 
-    /// ISO 32000-2, 14.13: each is an embedded file stream and a file specification
-    /// with the relationship `Supplement`. They are associated with their tags only,
-    /// so they are not in the name tree of embedded files.
+    /// ISO 32000-2, 14.13: each is an embedded file with the relationship `Supplement`.
+    /// They are associated with their tags only, so they are not in the name tree of
+    /// embedded files.
     fn serialize_mathml_files(&mut self, chunk_container: &mut ChunkContainer) {
         let mut files = std::mem::take(&mut self.mathml_files)
             .into_iter()
             .collect::<Vec<_>>();
         // In the order they were registered, so that the numbering follows the tags.
-        files.sort_by_key(|(_, file)| file.get());
+        files.sort_by_key(|(_, (file, _))| file.get());
 
-        for (index, (mathml, file_ref)) in files.into_iter().enumerate() {
-            let stream_ref = self.new_ref();
-            let mut stream_chunk = self.new_chunk();
-            let stream = FilterStreamBuilder::new_auto_compressed(mathml.as_bytes())
-                .finish(&self.serialize_settings());
-            let mut embedded = stream_chunk.embedded_file(stream_ref, stream.encoded_data());
-            stream.write_filters(embedded.deref_mut().deref_mut());
-            embedded.subtype(Name(b"application/mathml+xml"));
-            embedded.params().size(mathml.len() as i32);
-            embedded.finish();
-            chunk_container.streams.embedded_files.push(stream_chunk);
-
-            let name = format!("formula-{}.mml", index + 1);
-            let mut file_spec = chunk_container
-                .non_stream
-                .embedded_files
-                .file_spec(file_ref);
-            file_spec.path(Str(name.as_bytes()));
-            file_spec.unic_file(TextStr(&name));
-            let mut ef = file_spec.insert(Name(b"EF")).dict();
-            ef.pair(Name(b"F"), stream_ref);
-            ef.pair(Name(b"UF"), stream_ref);
-            ef.finish();
-            file_spec.association_kind(pdf_writer::types::AssociationKind::Supplement);
-            file_spec.description(TextStr("MathML for a formula"));
-            file_spec.finish();
+        for (index, (mathml, (file_ref, location))) in files.into_iter().enumerate() {
+            let file = EmbeddedFile {
+                path: format!("formula-{}.mml", index + 1),
+                mime_type: MimeType::new("application/mathml+xml"),
+                description: Some("MathML for a formula".to_string()),
+                association_kind: AssociationKind::Supplement,
+                data: mathml.into_bytes().into(),
+                modification_date: None,
+                compress: None,
+                location,
+            };
+            // This also reports the embedded file to the validators.
+            file.serialize(self, chunk_container, file_ref);
         }
     }
 
@@ -1028,7 +1030,8 @@ impl SerializeContext {
                 .keys()
                 .find(|id| !id_tree_map.contains_key(id))
             {
-                return Err(KrillaError::UnknownTagId(id.clone(), None));
+                let location = self.structure_destination_locations.get(id).copied();
+                return Err(KrillaError::UnknownTagId(id.clone(), location));
             }
 
             let mut chunk = self.new_chunk();
@@ -1258,15 +1261,32 @@ pub(crate) struct Pdf2Namespaces {
     pub(crate) krilla_ref: Ref,
 }
 
+/// A registered named destination.
+pub(crate) struct NamedDestinationEntry {
+    /// The destination array, which leads to a tag for a structure destination.
+    pub(crate) dest_ref: Ref,
+    /// The destination itself.
+    pub(crate) dest: XyzDestination,
+    /// For a structure destination in PDF 2.0, the same destination leading to the page.
+    pub(crate) page_ref: Option<Ref>,
+    /// For a written structure destination, the dictionary with `D` and `SD` that the
+    /// name tree has to point to instead of `dest_ref`.
+    pub(crate) dict_ref: Option<Ref>,
+}
+
+impl NamedDestinationEntry {
+    /// What the name tree entry points to.
+    pub(crate) fn name_tree_ref(&self) -> Ref {
+        self.dict_ref.unwrap_or(self.dest_ref)
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
     /// All named destinations that have been registered, including a Ref to their destination and
     /// the destination itself.
     // Needs to be pub(crate) because writing of named destinations happens in `ChunkContainer`.
-    /// For each name the reference its entry in the name tree points to, the
-    /// destination, and for a structure destination the reference of its page destination.
-    pub(crate) named_destinations:
-        MaybeTaken<HashMap<Arc<String>, (Ref, XyzDestination, Option<Ref>)>>,
+    pub(crate) named_destinations: MaybeTaken<HashMap<Arc<String>, NamedDestinationEntry>>,
     /// A map from fonts to font container.
     font_map: MaybeTaken<IndexMap<Font, Rc<RefCell<FontContainer>>>>,
     /// All XYZ destinations used in the document. The reason we need to store them

@@ -97,3 +97,10 @@ and a list with `Decimal` numbering. A list with labels and `ListNumbering::None
 8.2.5.25. Before krilla rejected them, a link or outline entry with an XYZ destination
 failed 8.8 and a `TOCI` without `Ref` failed 8.2.5.8. veraPDF does not check that a
 footnote's citation has a `Ref`; it only checks that the `Ref` entries that exist match up.
+
+# Compatibility
+
+These are new variants of public enums that are not `#[non_exhaustive]`, so a crate that
+matches one of them exhaustively has to add arms: `Accessibility::UA2`,
+`ListNumbering::{Unordered, Ordered, Description}`, `TagKind::{Aside, Artifact}` and the
+`ValidationError` variants `NonStructureDestination` and `MissingStructureRef`.

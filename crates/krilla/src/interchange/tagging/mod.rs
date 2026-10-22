@@ -720,6 +720,9 @@ pub(crate) struct TagIds<'a> {
     /// The references of the tags that other tags refer to. Allocated up front, so
     /// that a tag can refer to one that is written after it.
     ref_targets: BTreeMap<TagId, Ref>,
+    /// How many tags written so far refer to other tags, so that a tag can tell whether
+    /// one of its descendants does without walking them again.
+    with_refs: usize,
 }
 
 /// A node in a tag tree.
@@ -826,6 +829,7 @@ impl TagGroup {
             .copied()
             .unwrap_or_else(|| sc.new_ref());
         let mut children_refs = vec![];
+        let with_refs_before = ids.with_refs;
 
         for child in &self.children {
             let serialized =
@@ -834,6 +838,17 @@ impl TagGroup {
                 children_refs.push(ref_);
             }
         }
+
+        // Whether this tag or one of its descendants refers to another tag.
+        if self
+            .tag
+            .as_any()
+            .refs()
+            .is_some_and(|refs| !refs.is_empty())
+        {
+            ids.with_refs += 1;
+        }
+        let has_refs = ids.with_refs > with_refs_before;
 
         let mut struct_elem = struct_elems.struct_element(elem_ref);
         self.tag.write_kind(&mut struct_elem, sc);
@@ -863,7 +878,7 @@ impl TagGroup {
             *note_id += 1;
         }
 
-        if matches!(self.tag, TagKind::TOCI(_) | TagKind::Note(_)) && !self.has_refs() {
+        if matches!(self.tag, TagKind::TOCI(_) | TagKind::Note(_)) && !has_refs {
             sc.register_validation_error(ValidationError::MissingStructureRef(tag.location));
         }
 
@@ -957,7 +972,7 @@ impl TagGroup {
             if let Some(role) = tag.aria_role().filter(|role| !role.is_empty()) {
                 let mut aria = attributes.push();
                 aria.owner(AttributeOwner::Aria1_1, true);
-                aria.pair(Name(b"role"), Name(role.as_bytes()));
+                aria.pair(Name(b"role"), TextStr(role));
             }
         }
 
@@ -1183,18 +1198,6 @@ impl TagGroup {
         Ok(Reference::Ref(elem_ref))
     }
 
-    /// Whether this tag or one of its descendants refers to another tag.
-    fn has_refs(&self) -> bool {
-        self.tag
-            .as_any()
-            .refs()
-            .is_some_and(|refs| !refs.is_empty())
-            || self.children.iter().any(|child| match child {
-                Node::Group(group) => group.has_refs(),
-                Node::Leaf(_) => false,
-            })
-    }
-
     /// Collect the ids of all tags that this tag or one of its descendants refers to.
     fn collect_ref_targets(&self, ids: &mut BTreeSet<TagId>) {
         if let Some(refs) = self.tag.as_any().refs() {
@@ -1329,6 +1332,7 @@ impl TagTree {
         let mut ids = TagIds {
             tree: id_tree_map,
             ref_targets,
+            with_refs: 0,
         };
         let mut children_refs = vec![];
 

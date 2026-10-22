@@ -318,8 +318,9 @@ impl ChunkContainer {
                 // hence just comparing by the name is enough.
                 sorted.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
-                for (name, (dest_ref, _, _)) in sorted {
-                    dest_name_entries.insert(Str(name.as_bytes()), remapper[&dest_ref]);
+                for (name, entry) in sorted {
+                    dest_name_entries
+                        .insert(Str(name.as_bytes()), remapper[&entry.name_tree_ref()]);
                 }
 
                 dest_name_entries.finish();
