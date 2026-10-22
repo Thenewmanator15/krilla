@@ -58,3 +58,8 @@ yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
  
+
+# Prototype only: the pdf-writer above for every crate that depends on it, so that
+# krilla and hayro-write agree on one copy.
+[patch.crates-io]
+pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "fdf090125f1e7209fa630c4ca1f5f29910c87c93" }
