@@ -379,6 +379,10 @@ required = ["Struct::ArtifactKind"]
 [Tag.Strong]
 # Encloses content that is emphasized, most commonly *italic* text.
 [Tag.Em]
+# A part of a block-level element, such as one line of a code block.
+#
+# This is a PDF 2.0 tag. In older versions it is written as `Span`.
+[Tag.Sub]
 
 [Attr.Struct]
 # The tag id.

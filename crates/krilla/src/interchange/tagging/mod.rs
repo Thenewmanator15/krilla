@@ -613,6 +613,13 @@ impl TagKind {
                     struct_elem.kind_2(StructRole2::Em, sc.pdf2_ns.ssn_ref);
                 }
             }
+            Self::Sub(_) => {
+                if pdf_version < PdfVersion::Pdf20 {
+                    struct_elem.kind(StructRole::Span);
+                } else {
+                    struct_elem.kind_2(StructRole2::Sub, sc.pdf2_ns.ssn_ref);
+                }
+            }
         };
     }
 
@@ -662,6 +669,7 @@ impl TagKind {
             Self::Artifact(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
+            Self::Sub(_) => PdfVersion::Pdf14,
         }
     }
 

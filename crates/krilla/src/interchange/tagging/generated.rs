@@ -143,6 +143,10 @@ pub enum TagKind {
     Strong(Tag<kind::Strong>),
     /// Encloses content that is emphasized, most commonly *italic* text.
     Em(Tag<kind::Em>),
+    /// A part of a block-level element, such as one line of a code block.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is written as `Span`.
+    Sub(Tag<kind::Sub>),
 }
 
 impl TagKind {
@@ -190,6 +194,7 @@ impl TagKind {
             Self::Artifact(tag) => tag.as_any(),
             Self::Strong(tag) => tag.as_any(),
             Self::Em(tag) => tag.as_any(),
+            Self::Sub(tag) => tag.as_any(),
         }
     }
 
@@ -238,6 +243,7 @@ impl TagKind {
             Self::Artifact(tag) => tag.as_any_mut(),
             Self::Strong(tag) => tag.as_any_mut(),
             Self::Em(tag) => tag.as_any_mut(),
+            Self::Sub(tag) => tag.as_any_mut(),
         }
     }
 
@@ -1985,6 +1991,12 @@ pub mod kind {
     /// Encloses content that is emphasized, most commonly *italic* text.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Em;
+
+    /// A part of a block-level element, such as one line of a code block.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is written as `Span`.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Sub;
 
 }
 
@@ -4500,6 +4512,19 @@ impl Tag<kind::Em> {
     /// Encloses content that is emphasized, most commonly *italic* text.
     #[allow(non_upper_case_globals)]
     pub const Em: Tag<kind::Em> = Tag::new();
+}
+
+impl From<Tag<kind::Sub>> for TagKind {
+    fn from(value: Tag<kind::Sub>) -> Self {
+        Self::Sub(value)
+    }
+}
+impl Tag<kind::Sub> {
+    /// A part of a block-level element, such as one line of a code block.
+    ///
+    /// This is a PDF 2.0 tag. In older versions it is written as `Span`.
+    #[allow(non_upper_case_globals)]
+    pub const Sub: Tag<kind::Sub> = Tag::new();
 }
 
 #[derive(Clone, Debug, PartialEq)]

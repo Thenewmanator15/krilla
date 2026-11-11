@@ -160,6 +160,7 @@ impl Output for TagKind {
             TagKind::Artifact(_) => write!(f, "Artifact"),
             TagKind::Strong(_) => write!(f, "Strong"),
             TagKind::Em(_) => write!(f, "Em"),
+            TagKind::Sub(_) => write!(f, "Sub"),
         }?;
         writeln!(f)?;
 
